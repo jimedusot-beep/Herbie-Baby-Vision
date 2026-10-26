@@ -1,1 +1,21 @@
-# Herbie-Baby-Vision
+# H.E.R.B.I.E. Baby Vision
+
+Baby Vision is an **AI development assistant for H.E.R.B.I.E.**, not the robot runtime. It will coordinate research, code proposals, tests and human review without controlling physical hardware.
+
+**Current status: V0.1 starter scaffold.** No local AI model, coding agent or operational dashboard has been installed or verified.
+
+## Project links
+
+- [H.E.R.B.I.E. robot software](https://github.com/jimedusot-beep/Herbie)
+- [H.E.R.B.I.E. hardware engineering](https://github.com/jimedusot-beep/Herbie-cyborg-hardware)
+- [Robot-side integration proposal PR #66](https://github.com/jimedusot-beep/Herbie/pull/66)
+
+## Roadmap
+
+1. Check HP ZBook CPU, RAM, GPU, operating system and free storage.
+2. Evaluate OpenHands or OpenCode using an isolated disposable checkout.
+3. Connect a suitable local model through Ollama if hardware permits.
+4. Run one narrowly scoped H.E.R.B.I.E. coding task, collect tests and diff.
+5. Require human approval before any merge or deployment.
+
+See [integration plan](docs/INTEGRATION_PLAN.md) and [safety policy](docs/SAFETY.md).
