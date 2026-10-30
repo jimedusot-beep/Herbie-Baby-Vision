@@ -7,3 +7,7 @@ node_modules/
 .venv/
 *.log
 secrets/
+# Private local review packets; never publish source/test output.
+review-packets/
+validation-reports/
+*-evidence.json
