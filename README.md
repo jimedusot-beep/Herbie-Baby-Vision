@@ -2,11 +2,12 @@
 
 Baby Vision is an **AI development assistant for H.E.R.B.I.E.**, not the robot runtime. It will coordinate research, code proposals, tests and human review without controlling physical hardware.
 
-**Current status: first bounded local-model worker.** The
+**Current status: bounded local-model worker plus supervised validation coordinator.** The
 [first-task coordinator](docs/FIRST_WORKER.md) asks a local model for one scoped
 code proposal, tests it in a disposable checkout and produces private evidence
-for human review. An operational dashboard, general coding agent and broader
-orchestration remain pending.
+for human review. The [validation coordinator](docs/COORDINATION.md) produces structured
+status reports for reviewed repository snapshots. A general coding agent,
+runtime knowledge adapters and OS sandbox provisioning remain pending.
 
 ## Project links
 
@@ -23,3 +24,5 @@ orchestration remain pending.
 5. Require human approval before any merge or deployment.
 
 See [integration plan](docs/INTEGRATION_PLAN.md) and [safety policy](docs/SAFETY.md).
+
+See [Agent 05 evidence](docs/AGENT05_EVIDENCE.md) for executed checks and remaining blockers.
