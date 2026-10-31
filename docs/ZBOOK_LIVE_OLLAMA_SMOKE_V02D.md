@@ -38,9 +38,9 @@ If Ollama isn't listening at `http://127.0.0.1:11434`, the script reports a bloc
 ## Reviewed gateway source protection
 
 The ZBook harness now requires the **hardened** H.E.R.B.I.E. gateway Git blob
-`76b5791f4479a9ce8b63732e3d0985786fca0dee`. That corresponds to the
+`c27250693d9e8593a6ddb66ac567e9a68eeb8e36`. That corresponds to the
 gateway changes in H.E.R.B.I.E. draft PR #86: bounded connection handlers,
-HTTP header/JSON ambiguity rejection, and UTF-8 response limits.
+HTTP header/JSON ambiguity rejection, UTF-8 response limits and a 60,000-byte serialized-response cap.
 
 After hashing, the harness compiles and executes **the verified bytes in
 memory**, rather than importing the same pathname a second time. This prevents
