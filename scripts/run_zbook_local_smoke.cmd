@@ -53,13 +53,13 @@ if errorlevel 1 (
   goto :blocked
 )
 
-echo Verifying exact reviewed source files...
+echo Verifying exact reviewed Git source blobs...
 set "CLIENT_SHA="
 set "SMOKE_SHA="
 set "GATEWAY_SHA="
-for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" hash-object "agents/herbie_gateway_client.py"') do set "CLIENT_SHA=%%H"
-for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" hash-object "integration/live_ollama_smoke.py"') do set "SMOKE_SHA=%%H"
-for /f "delims=" %%H in ('git -C "%WORK%\HerbieGateway" hash-object "socratic-agent/socratic_agent/worker_gateway.py"') do set "GATEWAY_SHA=%%H"
+for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/herbie_gateway_client.py') do set "CLIENT_SHA=%%H"
+for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:integration/live_ollama_smoke.py') do set "SMOKE_SHA=%%H"
+for /f "delims=" %%H in ('git -C "%WORK%\HerbieGateway" rev-parse HEAD:socratic-agent/socratic_agent/worker_gateway.py') do set "GATEWAY_SHA=%%H"
 
 if /I not "%CLIENT_SHA%"=="8de4ac1463eeaf890554ee302a55d6e61ab0ae88" (
   echo BLOCKED: Baby Vision client has changed since review. Do not bypass verification.
