@@ -72,10 +72,10 @@ class SmokeHarnessTests(unittest.TestCase):
             smoke.load_gateway_module("nonexistent/worker_gateway.py")
 
     def test_reviewed_git_blob_hash_handles_windows_crlf(self):
-        self.assertEqual(smoke.reviewed_git_blob_sha(b"line one\\nline two\\n"),
-                         smoke.reviewed_git_blob_sha(b"line one\\r\\nline two\\r\\n"))
-        self.assertNotEqual(smoke.reviewed_git_blob_sha(b"expected\\n"),
-                            smoke.reviewed_git_blob_sha(b"modified\\n"))
+        self.assertEqual(smoke.reviewed_git_blob_sha(b"line one\nline two\n"),
+                         smoke.reviewed_git_blob_sha(b"line one\r\nline two\r\n"))
+        self.assertNotEqual(smoke.reviewed_git_blob_sha(b"expected\n"),
+                            smoke.reviewed_git_blob_sha(b"modified\n"))
 
     def test_unreviewed_gateway_source_is_refused_before_import(self):
         with tempfile.TemporaryDirectory() as folder:
