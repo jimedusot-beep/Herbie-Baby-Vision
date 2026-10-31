@@ -12,6 +12,34 @@ This V0.2d branch is stacked on Baby Vision PR #4. The PRs remain independent an
 
 **Do not use a live Companion V2.1 working tree.** Use separate fresh clones of the two review branches. Importing a Python module executes its code, so verify that the `worker_gateway.py` file is really the reviewed PR #86 source before using it. The script checks its reviewed Git blob SHA and executes those same verified bytes, with any unknown revision blocked until separately reviewed and re-pinned.
 
+## Simpler Windows option — one reviewed CMD launcher
+
+If you prefer not to type the clone/test commands below, open the
+[ZBook smoke-test launcher](../scripts/run_zbook_local_smoke.cmd) on this same
+draft branch, inspect its source, then use GitHub's **Raw** / **Download raw**
+to save it as `run_zbook_local_smoke.cmd`.
+
+On your ZBook, open **Command Prompt** and run the saved file, for example:
+
+```bat
+"%USERPROFILE%\\Downloads\\run_zbook_local_smoke.cmd"
+```
+
+The launcher requires Git, Python 3.12, and an already-running Ollama installation
+with `gemma3:1b`. It creates a new review directory under your Windows profile,
+clones the two dedicated branches into that directory, checks the committed
+Git blob IDs of the approved client, smoke harness and gateway, and then calls
+the existing sanitized local-only test. **It will refuse a changed/unreviewed
+source version.** It never modifies `C:\\Users\\jimso\\Herbie`, stores a
+gateway token, starts a remote listener, merges, or deploys. Review copies are
+left on disk so you can inspect them.
+
+If Git asks you to sign in, use your normal GitHub credential manager; do not
+paste credentials into the command file or chat. Windows may warn about
+downloaded command files—inspect before allowing execution, rather than
+blindly bypassing security controls. This convenience launcher has **not been
+run on your physical ZBook**, so its Windows execution is still unverified.
+
 ## On the Windows ZBook — PowerShell
 
 Use a PowerShell terminal (not CMD). Start from a new directory to avoid disturbing any existing H.E.R.B.I.E. work. Commands do not merge, reset, or deploy anything:
