@@ -86,6 +86,24 @@ class SmokeHarnessTests(unittest.TestCase):
                                         "gateway_source_revision_unreviewed"):
                 smoke.load_gateway_module(path)
 
+    def test_gateway_executes_exact_reviewed_bytes_even_after_file_swap(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "worker_gateway.py"
+            original = b"MARKER = 'reviewed'\\n"
+            path.write_bytes(original)
+            real_compile = compile
+
+            def file_swap_before_compile(source, filename, mode):
+                path.write_bytes(b"raise RuntimeError('modified after verification')\\n")
+                return real_compile(source, filename, mode)
+
+            with patch.object(smoke, "REVIEWED_GATEWAY_GIT_BLOB_SHA",
+                              smoke.reviewed_git_blob_sha(original)), \\
+                 patch.object(smoke, "compile", side_effect=file_swap_before_compile,
+                              create=True):
+                module = smoke.load_gateway_module(path)
+            self.assertEqual(module.MARKER, "reviewed")
+
     def test_loopback_tags_allowlist_detects_installed_model(self):
         fixture = TagFixture({"models": [{"name": "gemma3:1b"},
                                          {"model": "qwen2.5-coder:1.5b"}]})
