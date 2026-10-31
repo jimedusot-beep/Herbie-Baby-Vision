@@ -29,7 +29,7 @@ from herbie_gateway_client import GatewayError, HerbieGatewayClient
 MAX_TAGS_BYTES = 262_144
 # Reviewed Git blob SHA of Herbie PR #86's worker_gateway.py.
 # Re-review and update this pin whenever the gateway module changes.
-REVIEWED_GATEWAY_GIT_BLOB_SHA = "76b5791f4479a9ce8b63732e3d0985786fca0dee"
+REVIEWED_GATEWAY_GIT_BLOB_SHA = "c27250693d9e8593a6ddb66ac567e9a68eeb8e36"
 TEST_PROMPT = "In one short sentence, explain what a Python unit test checks."
 
 
