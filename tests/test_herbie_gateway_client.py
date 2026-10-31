@@ -56,6 +56,9 @@ class GatewayClientTests(unittest.TestCase):
                 raw = self.rfile.read(int(self.headers['Content-Length']))
                 seen.append((self.path, dict(self.headers.items()), raw))
                 handler(self, json.loads(raw))
+            def do_GET(self):
+                seen.append((self.path, dict(self.headers.items()), b''))
+                handler(self, None)
         server = ThreadingHTTPServer(('127.0.0.1', 0), Endpoint)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -130,6 +133,30 @@ class GatewayClientTests(unittest.TestCase):
                 client = gateway.HerbieGatewayClient(url, TOKEN, MODEL)
                 with self.assertRaises(gateway.GatewayError):
                     client.infer('testing', 'Check fixture', str(uuid4()))
+
+
+    def test_health_checks_auth_and_expected_response(self):
+        def responder(handler, incoming):
+            self.respond(handler, {'schema_version': 1, 'ok': True})
+        url, seen = self.server(responder)
+        client = gateway.HerbieGatewayClient(url, TOKEN, MODEL)
+        self.assertTrue(client.health())
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0][0], '/v1/worker/health')
+        self.assertEqual(seen[0][1]['Authorization'], 'Bearer ' + TOKEN)
+
+    def test_health_rejects_unexpected_or_oversize_response(self):
+        for payload in ({'schema_version': 1, 'ok': False},
+                        {'schema_version': True, 'ok': True},
+                        {'schema_version': 1, 'ok': True, 'model': MODEL},
+                        {'schema_version': 1, 'ok': True, 'padding': 'x' * 2000}):
+            with self.subTest(payload=payload.get('ok')):
+                def responder(handler, incoming):
+                    self.respond(handler, payload)
+                url, _ = self.server(responder)
+                client = gateway.HerbieGatewayClient(url, TOKEN, MODEL)
+                with self.assertRaises(gateway.GatewayError):
+                    client.health()
 
 
 if __name__ == '__main__':
