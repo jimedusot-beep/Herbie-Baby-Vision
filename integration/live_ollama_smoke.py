@@ -11,6 +11,7 @@ PowerShell example (from this repository's checkout):
       --gateway-file C:/Review/Herbie/socratic-agent/socratic_agent/worker_gateway.py
 """
 import argparse
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -26,6 +27,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agents"))
 from herbie_gateway_client import GatewayError, HerbieGatewayClient
 
 MAX_TAGS_BYTES = 262_144
+# Reviewed Git blob SHA of Herbie PR #86's worker_gateway.py.
+# Re-review and update this pin whenever the gateway module changes.
+REVIEWED_GATEWAY_GIT_BLOB_SHA = "05c760aabfb832ff7d69f540bc61b157dd1eec47"
 TEST_PROMPT = "In one short sentence, explain what a Python unit test checks."
 
 
@@ -42,6 +46,11 @@ def load_gateway_module(path):
     path = Path(path).expanduser() if path else None
     if path is None or not path.is_file() or path.name != "worker_gateway.py":
         raise SmokeBlocked("reviewed_gateway_source_unavailable")
+    source = path.read_bytes()
+    git_blob = hashlib.sha1(b"blob " + str(len(source)).encode("ascii")
+                            + b"\\0" + source).hexdigest()
+    if git_blob != REVIEWED_GATEWAY_GIT_BLOB_SHA:
+        raise SmokeBlocked("gateway_source_revision_unreviewed")
     spec = importlib.util.spec_from_file_location("herbie_v02b_smoke_gateway", path)
     if spec is None or spec.loader is None:
         raise SmokeBlocked("reviewed_gateway_source_unavailable")
