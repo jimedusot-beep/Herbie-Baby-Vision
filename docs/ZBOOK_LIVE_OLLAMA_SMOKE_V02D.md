@@ -10,7 +10,7 @@
 
 This V0.2d branch is stacked on Baby Vision PR #4. The PRs remain independent and unmerged.
 
-**Do not use a live Companion V2.1 working tree.** Use separate fresh clones of the two review branches. Importing a Python module executes its code, so verify that the `worker_gateway.py` file is really the reviewed PR #86 source before using it. The script checks its exact reviewed Git blob SHA before importing it; any modified or newer gateway source is blocked until separately reviewed and re-pinned.
+**Do not use a live Companion V2.1 working tree.** Use separate fresh clones of the two review branches. Importing a Python module executes its code, so verify that the `worker_gateway.py` file is really the reviewed PR #86 source before using it. The script checks its reviewed Git blob SHA and executes those same verified bytes, with any unknown revision blocked until separately reviewed and re-pinned.
 
 ## On the Windows ZBook — PowerShell
 
@@ -34,6 +34,20 @@ py -3.12 integration/live_ollama_smoke.py --run-live --model gemma3:1b --gateway
 **Important:** `gemma3:1b` is an example based on the earlier ZBook setup; use the exact model currently shown by `ollama list`. The script will **not** install or download an uninstalled model. Git cloning requires your normal GitHub authorization for the private H.E.R.B.I.E. repository.
 
 If Ollama isn't listening at `http://127.0.0.1:11434`, the script reports a blocked check. Start your locally installed Ollama service separately, then retry. The smoke test does not start, install or reconfigure Ollama for you.
+
+## Reviewed gateway source protection
+
+The ZBook harness now requires the **hardened** H.E.R.B.I.E. gateway Git blob
+`76b5791f4479a9ce8b63732e3d0985786fca0dee`. That corresponds to the
+gateway changes in H.E.R.B.I.E. draft PR #86: bounded connection handlers,
+HTTP header/JSON ambiguity rejection, and UTF-8 response limits.
+
+After hashing, the harness compiles and executes **the verified bytes in
+memory**, rather than importing the same pathname a second time. This prevents
+a modified source file or stale Python bytecode from being used after the
+verification check. The hash is a version pin, not a guarantee against
+malicious code in an untrusted source; only reviewed branch content should be
+run. Future gateway modifications require a new review and pin update.
 
 ## What runs and what does not
 
