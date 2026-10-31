@@ -89,18 +89,20 @@ class SmokeHarnessTests(unittest.TestCase):
     def test_gateway_executes_exact_reviewed_bytes_even_after_file_swap(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "worker_gateway.py"
-            original = b"MARKER = 'reviewed'\\n"
+            original = b"MARKER = 'reviewed'\n"
             path.write_bytes(original)
             real_compile = compile
 
             def file_swap_before_compile(source, filename, mode):
-                path.write_bytes(b"raise RuntimeError('modified after verification')\\n")
+                path.write_bytes(b"raise RuntimeError('modified after verification')\n")
                 return real_compile(source, filename, mode)
 
-            with patch.object(smoke, "REVIEWED_GATEWAY_GIT_BLOB_SHA",
-                              smoke.reviewed_git_blob_sha(original)), \\
-                 patch.object(smoke, "compile", side_effect=file_swap_before_compile,
-                              create=True):
+            with (
+                patch.object(smoke, "REVIEWED_GATEWAY_GIT_BLOB_SHA",
+                             smoke.reviewed_git_blob_sha(original)),
+                patch.object(smoke, "compile", side_effect=file_swap_before_compile,
+                             create=True),
+            ):
                 module = smoke.load_gateway_module(path)
             self.assertEqual(module.MARKER, "reviewed")
 
