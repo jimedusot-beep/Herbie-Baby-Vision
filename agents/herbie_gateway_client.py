@@ -26,6 +26,14 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def _valid_tailnet_hostname(host):
+    """Require the expected device.tailnet.ts.net shape; no empty labels."""
+    labels = host.split('.')
+    return (len(labels) == 4 and labels[-2:] == ['ts', 'net']
+            and all(re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label)
+                    for label in labels[:2]))
+
+
 def validate_gateway_url(base_url):
     """Allow HTTPS Tailscale Serve names, or HTTP loopback for local tests.
 
@@ -45,7 +53,7 @@ def validate_gateway_url(base_url):
         raise ValueError('Gateway URL must be a plain host without user info or paths')
     if url.scheme == 'http' and host in ('127.0.0.1', 'localhost') and port:
         return base_url.rstrip('/')
-    if (url.scheme == 'https' and host.endswith('.ts.net') and
+    if (url.scheme == 'https' and _valid_tailnet_hostname(host) and
             port in (None, 443)):
         return base_url.rstrip('/')
     raise ValueError('Gateway requires a Tailscale HTTPS host or HTTP loopback')
@@ -128,7 +136,7 @@ class HerbieGatewayClient:
         except (ValueError, UnicodeError):
             raise GatewayError('Invalid H.E.R.B.I.E. gateway JSON response') from None
         if (not isinstance(body, dict) or set(body) != {'schema_version', 'request_id', 'model', 'reply'} or
-                body['schema_version'] != 1 or body['request_id'] != request_id or
+                type(body['schema_version']) is not int or body['schema_version'] != 1 or body['request_id'] != request_id or
                 body['model'] != self.model or not isinstance(body['reply'], str) or
                 len(body['reply']) > 20_000):
             raise GatewayError('Invalid H.E.R.B.I.E. gateway response contract')
