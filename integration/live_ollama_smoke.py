@@ -12,7 +12,7 @@ PowerShell example (from this repository's checkout):
 """
 import argparse
 import hashlib
-import importlib.util
+import types
 import json
 from pathlib import Path
 import secrets
@@ -57,12 +57,11 @@ def load_gateway_module(path):
     git_blob = reviewed_git_blob_sha(source)
     if git_blob != REVIEWED_GATEWAY_GIT_BLOB_SHA:
         raise SmokeBlocked("gateway_source_revision_unreviewed")
-    spec = importlib.util.spec_from_file_location("herbie_v02b_smoke_gateway", path)
-    if spec is None or spec.loader is None:
-        raise SmokeBlocked("reviewed_gateway_source_unavailable")
-    module = importlib.util.module_from_spec(spec)
-    # Only load an operator-reviewed checkout: importing a Python file executes code.
-    spec.loader.exec_module(module)
+    # Execute the EXACT bytes checked above. Importing by pathname instead
+    # could read a modified file or use a stale .pyc after the hash check.
+    module = types.ModuleType("herbie_v02b_smoke_gateway")
+    module.__file__ = str(path)
+    exec(compile(source, str(path), "exec"), module.__dict__)
     return module
 
 
