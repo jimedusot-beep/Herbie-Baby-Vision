@@ -48,7 +48,7 @@ def load_gateway_module(path):
         raise SmokeBlocked("reviewed_gateway_source_unavailable")
     source = path.read_bytes()
     git_blob = hashlib.sha1(b"blob " + str(len(source)).encode("ascii")
-                            + b"\\0" + source).hexdigest()
+                            + b"\0" + source).hexdigest()
     if git_blob != REVIEWED_GATEWAY_GIT_BLOB_SHA:
         raise SmokeBlocked("gateway_source_revision_unreviewed")
     spec = importlib.util.spec_from_file_location("herbie_v02b_smoke_gateway", path)
