@@ -10,7 +10,7 @@
 
 This V0.2d branch is stacked on Baby Vision PR #4. The PRs remain independent and unmerged.
 
-**Do not use a live Companion V2.1 working tree.** Use separate fresh clones of the two review branches. Importing a Python module executes its code, so verify that the `worker_gateway.py` file is really the reviewed PR #86 source before using it. The script does not make an unreviewed file safe.
+**Do not use a live Companion V2.1 working tree.** Use separate fresh clones of the two review branches. Importing a Python module executes its code, so verify that the `worker_gateway.py` file is really the reviewed PR #86 source before using it. The script checks its exact reviewed Git blob SHA before importing it; any modified or newer gateway source is blocked until separately reviewed and re-pinned.
 
 ## On the Windows ZBook — PowerShell
 
