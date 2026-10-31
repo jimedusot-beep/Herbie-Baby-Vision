@@ -74,7 +74,7 @@ class SmokeHarnessTests(unittest.TestCase):
     def test_unreviewed_gateway_source_is_refused_before_import(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "worker_gateway.py"
-            path.write_text("raise RuntimeError('untrusted code should not execute')\\n",
+            path.write_text("raise RuntimeError('untrusted code should not execute')\n",
                             encoding="utf-8")
             with self.assertRaisesRegex(smoke.SmokeBlocked,
                                         "gateway_source_revision_unreviewed"):
