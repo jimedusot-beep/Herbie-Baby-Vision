@@ -42,13 +42,19 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def reviewed_git_blob_sha(source):
+    """Hash normalized Git blob bytes, tolerating Windows CRLF checkout conversion."""
+    normalized = source.replace(b"\r\n", b"\n")
+    return hashlib.sha1(b"blob " + str(len(normalized)).encode("ascii")
+                        + b"\0" + normalized).hexdigest()
+
+
 def load_gateway_module(path):
     path = Path(path).expanduser() if path else None
     if path is None or not path.is_file() or path.name != "worker_gateway.py":
         raise SmokeBlocked("reviewed_gateway_source_unavailable")
     source = path.read_bytes()
-    git_blob = hashlib.sha1(b"blob " + str(len(source)).encode("ascii")
-                            + b"\0" + source).hexdigest()
+    git_blob = reviewed_git_blob_sha(source)
     if git_blob != REVIEWED_GATEWAY_GIT_BLOB_SHA:
         raise SmokeBlocked("gateway_source_revision_unreviewed")
     spec = importlib.util.spec_from_file_location("herbie_v02b_smoke_gateway", path)
