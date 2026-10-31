@@ -6,6 +6,7 @@ import importlib.util
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import tempfile
 import re
 import threading
 from types import SimpleNamespace
@@ -69,6 +70,15 @@ class SmokeHarnessTests(unittest.TestCase):
             smoke.load_gateway_module("")
         with self.assertRaises(smoke.SmokeBlocked):
             smoke.load_gateway_module("nonexistent/worker_gateway.py")
+
+    def test_unreviewed_gateway_source_is_refused_before_import(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "worker_gateway.py"
+            path.write_text("raise RuntimeError('untrusted code should not execute')\\n",
+                            encoding="utf-8")
+            with self.assertRaisesRegex(smoke.SmokeBlocked,
+                                        "gateway_source_revision_unreviewed"):
+                smoke.load_gateway_module(path)
 
     def test_loopback_tags_allowlist_detects_installed_model(self):
         fixture = TagFixture({"models": [{"name": "gemma3:1b"},
