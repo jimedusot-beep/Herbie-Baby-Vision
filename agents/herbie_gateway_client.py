@@ -66,6 +66,32 @@ class HerbieGatewayClient:
         self.model = model
         self.timeout = timeout
 
+    def health(self):
+        """Authenticated gateway liveness, with no model or personal data exposed.
+
+        A successful health response does not prove Ollama inference is working.
+        """
+        req = urllib.request.Request(self.base_url + '/v1/worker/health',
+                method='GET', headers={'Authorization': 'Bearer ' + self._token,
+                                       'Accept': 'application/json'})
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+        try:
+            with opener.open(req, timeout=self.timeout) as response:
+                raw = response.read(1025)
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError):
+            raise GatewayError('H.E.R.B.I.E. gateway health check failed') from None
+        if len(raw) > 1024:
+            raise GatewayError('Invalid H.E.R.B.I.E. health response')
+        try:
+            body = json.loads(raw.decode('utf-8'))
+        except (ValueError, UnicodeError):
+            raise GatewayError('Invalid H.E.R.B.I.E. health response') from None
+        if (not isinstance(body, dict) or set(body) != {'schema_version', 'ok'}
+                or type(body['schema_version']) is not int or body['schema_version'] != 1
+                or body['ok'] is not True):
+            raise GatewayError('Invalid H.E.R.B.I.E. health response')
+        return True
+
     def infer(self, task_type, prompt, request_id):
         """Send one inference request, without automatic retries or side effects.
 
