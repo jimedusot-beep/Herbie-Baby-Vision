@@ -1,7 +1,7 @@
 name: Baby Vision worker tests
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'codex/v02*']
   push:
     branches: [main, 'feature/**']
   workflow_dispatch:
