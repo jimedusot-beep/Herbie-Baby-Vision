@@ -51,5 +51,45 @@ class GatewayClientHardeningTests(unittest.TestCase):
             worker.join(timeout=3)
 
 
+    def test_default_client_timeout_exceeds_upstream_inference_budget(self):
+        client = clientmod.HerbieGatewayClient('http://127.0.0.1:8787', TOKEN, MODEL)
+        self.assertGreaterEqual(client.timeout, 55)
+        self.assertLessEqual(client.timeout, 90)
+
+    def test_blank_gateway_reply_never_counts_as_success(self):
+        class Reply(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+            def do_POST(self):
+                request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                body = json.dumps({'schema_version': 1,
+                                   'request_id': request['request_id'],
+                                   'model': request['model'],
+                                   'reply': self.server.fixture_reply}).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Reply)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        try:
+            client = clientmod.HerbieGatewayClient(
+                f'http://127.0.0.1:{server.server_port}', TOKEN, MODEL, timeout=3)
+            for reply in ('', ' ', '\\n\\t', '\\u2003'):
+                with self.subTest(reply=repr(reply)):
+                    server.fixture_reply = reply
+                    with self.assertRaises(clientmod.GatewayError):
+                        client.infer('review', 'approved synthetic request', str(uuid4()))
+            server.fixture_reply = 'nonempty answer'
+            self.assertEqual(client.infer('review', 'approved synthetic request', str(uuid4())),
+                             'nonempty answer')
+        finally:
+            server.shutdown()
+            server.server_close()
+            worker.join(timeout=3)
+
+
 if __name__ == '__main__':
     unittest.main()
