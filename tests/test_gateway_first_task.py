@@ -83,7 +83,7 @@ class GatewayFirstTaskTests(unittest.TestCase):
         self.assertEqual(len(fixture.requests), 1)
         headers, req = fixture.requests[0]
         self.assertEqual(headers['Authorization'], 'Bearer ' + TOKEN)
-        self.assertEqual(req['task_type'], 'coding')
+        self.assertEqual(req['task_type'], 'npm_test_alias_v1')
         self.assertEqual(req['model'], MODEL)
         self.assertEqual(len(req), 5)
         self.assertIn('ONLY a JSON object', req['prompt'])
