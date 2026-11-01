@@ -100,6 +100,24 @@ class GatewayFirstTaskTests(unittest.TestCase):
             finally:
                 fixture.close()
 
+    def test_model_proposal_rejections_are_safe_and_specific(self):
+        for reply, code in (
+            ('not json', 'model_proposal_not_json'),
+            ('{}', 'model_proposal_unapproved'),
+            (json.dumps({'script': 'npm run unsafe', 'reason': 'no'}),
+             'model_proposal_unapproved'),
+        ):
+            gateway = FakeAuthenticatedGateway(reply=reply)
+            try:
+                with self.subTest(code=code), self.assertRaises(
+                        adapter.ModelProposalRejected) as ctx:
+                    adapter.propose_via_gateway(MODEL, gateway.url, 3, TOKEN)
+                self.assertEqual(ctx.exception.code, code)
+                self.assertEqual(str(ctx.exception), code)
+                self.assertNotIn(reply, str(ctx.exception))
+            finally:
+                gateway.close()
+
     def test_real_git_and_node_task_via_fake_gateway_preserves_source(self):
         fixture = FakeAuthenticatedGateway()
         self.addCleanup(fixture.close)
