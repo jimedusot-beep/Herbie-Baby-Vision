@@ -113,8 +113,8 @@ class SmokeHarnessTests(unittest.TestCase):
             path = Path(folder) / "worker_gateway.py"
             marker = Path(folder) / "UNTRUSTED_EXECUTION_MARKER"
             # If source was loaded without reviewing the blob, this marker would be written.
-            path.write_text("from pathlib import Path\\nPath(" + repr(str(marker))
-                            + ").write_text('unsafe')\\n", encoding="utf-8")
+            path.write_text("from pathlib import Path\nPath(" + repr(str(marker))
+                            + ").write_text('unsafe')\n", encoding="utf-8")
             source = Path(__file__).resolve().parents[1] / "integration" / "test_cross_repo_gateway.py"
             spec = importlib.util.spec_from_file_location("baby_cross_repo_pinned_test", source)
             module = importlib.util.module_from_spec(spec)
