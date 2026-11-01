@@ -91,6 +91,21 @@ class GatewayClientTests(unittest.TestCase):
             'request_id': ident, 'task_type': 'testing', 'model': MODEL,
             'prompt': 'Run approved test review'})
 
+    def test_npm_alias_v1_uses_fixed_task_type_without_client_supplied_schema(self):
+        def responder(handler, incoming):
+            self.respond(handler, {'schema_version': 1,
+                'request_id': incoming['request_id'], 'model': incoming['model'],
+                'reply': '{"script":"npm run test:unit","reason":"Approved tests"}'})
+        url, seen = self.server(responder)
+        client = gateway.HerbieGatewayClient(url, TOKEN, MODEL)
+        reply = client.infer('npm_test_alias_v1', 'Use existing tests', str(uuid4()))
+        self.assertIn('npm run test:unit', reply)
+        request = json.loads(seen[0][2])
+        self.assertEqual(request['task_type'], 'npm_test_alias_v1')
+        self.assertEqual(set(request), {'schema_version', 'request_id', 'task_type',
+                                        'model', 'prompt'})
+        self.assertNotIn('format', request)
+
     def test_mismatched_response_is_rejected(self):
         def responder(handler, incoming):
             self.respond(handler, {'schema_version': 1, 'request_id': str(uuid4()),
