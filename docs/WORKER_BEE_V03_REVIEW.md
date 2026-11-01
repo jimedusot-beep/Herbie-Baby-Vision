@@ -6,7 +6,7 @@
 
 Baby Vision `main` already provides one constrained local-model coding task in `agents/first_task.py`: suggest adding an approved `npm test` alias, run trusted tests in a disposable checkout, and write a **private evidence JSON**. The task runner itself is deliberately narrow and its workspace is **not an OS sandbox**.
 
-The missing beginner-friendly interface was a way to inspect that evidence without running shell commands or reading raw private test logs. This change adds a static, dependency-free reviewer that reads a file the operator explicitly selects.
+The missing beginner-friendly interface was a way to inspect that evidence without running shell commands or reading raw private test logs. This dashboard is now staged alongside the authenticated gateway-backed first-task adapter in the unified Baby Vision review branch. This change adds a static, dependency-free reviewer that reads a file the operator explicitly selects.
 
 ## What is implemented
 
