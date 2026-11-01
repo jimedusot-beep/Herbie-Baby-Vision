@@ -186,7 +186,7 @@ class SmokeHarnessTests(unittest.TestCase):
             self.assertTrue(result['source_checkout_unchanged'])
             self.assertFalse(result['review_packet_saved'])
             self.assertEqual(len(calls), 1)
-            self.assertEqual(calls[0]['task_type'], 'coding')
+            self.assertEqual(calls[0]['task_type'], 'npm_test_alias_v1')
             self.assertNotIn('model_reply', json.dumps(result))
         finally:
             server.shutdown()
