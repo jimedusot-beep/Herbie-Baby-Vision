@@ -98,6 +98,19 @@ class EndToEndContractTests(unittest.TestCase):
         self.assertEqual(upstream['messages'][1]['content'], 'Explain the synthetic test')
         self.assertNotIn('tools', upstream)
 
+    def test_fixed_schema_npm_alias_request_does_not_change_freeform_coding(self):
+        result = self.client.infer('npm_test_alias_v1',
+                                   'Only approved test alias', str(uuid4()))
+        self.assertEqual(result, 'SYNTHETIC: Only approved test alias')
+        self.assertEqual(len(self.inference_requests), 1)
+        bounded = self.inference_requests[0]
+        schema = bounded['format']
+        self.assertEqual(schema['properties']['script']['enum'], ['npm run test:unit'])
+        self.assertEqual(set(schema['required']), {'script', 'reason'})
+        self.assertFalse(schema['additionalProperties'])
+        self.assertEqual(bounded['options']['temperature'], 0)
+        self.assertNotIn('tools', bounded)
+
     def test_health_uses_auth_and_has_no_model_details(self):
         self.assertTrue(self.client.health())
         self.assertEqual(self.inference_requests, [])
