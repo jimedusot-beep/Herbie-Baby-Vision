@@ -14,6 +14,7 @@ from unittest.mock import patch
 AGENTS = Path(__file__).resolve().parents[1] / 'agents'
 sys.path.insert(0, str(AGENTS))
 from herbie_gateway_client import GatewayError
+from first_task import npm_executable
 adapter = importlib.import_module('gateway_first_task')
 
 TOKEN = 'v' * 48
@@ -60,6 +61,11 @@ class FakeAuthenticatedGateway:
 
 
 class GatewayFirstTaskTests(unittest.TestCase):
+    def test_fixed_npm_launcher_uses_windows_cmd(self):
+        self.assertEqual(npm_executable('win32'), 'npm.cmd')
+        self.assertEqual(npm_executable('linux'), 'npm')
+        self.assertEqual(npm_executable('darwin'), 'npm')
+
     def test_gateway_requires_explicit_local_host(self):
         self.assertEqual(adapter.require_local_gateway('http://127.0.0.1:8787'),
                          'http://127.0.0.1:8787')
