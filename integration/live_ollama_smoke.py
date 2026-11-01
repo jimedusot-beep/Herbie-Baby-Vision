@@ -124,7 +124,7 @@ def run_trusted_fixture_task(model, gateway_url, token):
             (repo / 'tests' / 'basic.test.cjs').write_text(
                 "const {test}=require('node:test');"
                 "const assert=require('node:assert/strict');"
-                "test('fixed fixture',()=>assert.equal(2+2,4));\\n",
+                "test('fixed fixture',()=>assert.equal(2+2,4));\n",
                 encoding='utf-8')
             git(repo, 'add', '.')
             git(repo, 'commit', '-qm', 'Generated trusted fixture')
@@ -142,7 +142,7 @@ def run_trusted_fixture_task(model, gateway_url, token):
                     'generated_commands_executed': False}
     except SmokeBlocked:
         raise
-    except (OSError, subprocess.SubprocessError, ValueError, KeyError):
+    except (OSError, subprocess.SubprocessError, ValueError, KeyError, GatewayError):
         raise SmokeBlocked('bounded_worker_fixture_failed') from None
 
 def run_live(model, gateway_file, ollama_url="http://127.0.0.1:11434", *, run_fixture_task=False):
