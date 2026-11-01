@@ -49,7 +49,7 @@ mkdir "$HOME\AI-Network-Review" -ErrorAction SilentlyContinue
 cd "$HOME\AI-Network-Review"
 
 git clone --branch codex/v02d-real-ollama-local-smoke --single-branch https://github.com/jimedusot-beep/Herbie-Baby-Vision.git BabyVision-V02d
-git clone --branch codex/v02b-worker-inference-gateway --single-branch https://github.com/jimedusot-beep/Herbie.git Herbie-Gateway-Review
+git clone --branch integration/herbie-engineering-20261031 --single-branch https://github.com/jimedusot-beep/Herbie.git Herbie-Gateway-Review
 
 ollama list
 
@@ -141,3 +141,5 @@ Before connecting an older PC or iPhone, separately review:
 - Existing constraints remain: loopback-only, one synthetic/real inference at a time, no private memories, no tools, no remote port, no GitHub merge, no hardware controls.
 
 **Remaining**: Run the full Python suites and the reviewed cross-repo tests on exact current SHAs; a real ZBook Ollama call has not been executed here. There is still no server-side client-disconnect cancellation, idempotent duplicate-request registry or approved remote two-PC test. These gaps are tracked in the diagnostic issues.
+
+**November 1 integration note:** The ZBook examples now clone the unified [H.E.R.B.I.E. #93](https://github.com/jimedusot-beep/Herbie/pull/93) candidate rather than isolated #86. The gateway source bytes are identical and still pinned; the broader H.E.R.B.I.E. runtime does **not** automatically start. This is a local smoke test, not release approval.
