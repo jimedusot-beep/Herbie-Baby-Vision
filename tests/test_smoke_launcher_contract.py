@@ -33,6 +33,7 @@ class WindowsSmokeLauncherTests(unittest.TestCase):
         self.assertIn('--branch codex/v02d-real-ollama-local-smoke', cmd)
         self.assertIn('--branch integration/herbie-engineering-20261031', cmd)
         self.assertIn('--run-live', cmd)
+        self.assertIn('--run-fixture-task', cmd)
         self.assertIn('--gateway-file', cmd)
         self.assertNotIn('--branch codex/v02b-worker-inference-gateway', cmd)
         self.assertNotIn('HERBIE_WORKER_GATEWAY_ENABLED=1', cmd)
