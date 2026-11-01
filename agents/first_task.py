@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import urllib.request
 from urllib.parse import urlsplit
@@ -17,6 +18,16 @@ from urllib.parse import urlsplit
 
 SCRIPT = 'npm run test:unit'
 UNIT_SCRIPT = 'node --test tests/*.test.cjs'
+
+
+def npm_executable(platform=None):
+    """Choose the fixed npm launcher that Python can start on this OS.
+
+    Windows Python subprocess does not necessarily resolve bare npm to npm.cmd.
+    This selects an installed launcher; it never accepts model-supplied commands.
+    """
+    platform = sys.platform if platform is None else platform
+    return 'npm.cmd' if platform == 'win32' else 'npm'
 
 
 def validate_proposal(proposal):
@@ -104,7 +115,7 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
             before = json.loads(package_file.read_text())
             # Validate eligibility before spending time on model generation.
             patched_package(before, {'script': SCRIPT, 'reason': 'Eligibility check'})
-            baseline = subprocess.run(['npm', 'test'], cwd=checkout,
+            baseline = subprocess.run([npm_executable(), 'test'], cwd=checkout,
                 capture_output=True, text=True, timeout=90)
             if baseline.returncode == 0:
                 raise ValueError('npm test already succeeds; choose a task that is actually needed')
@@ -116,7 +127,7 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
                 raise ValueError('Change escaped the approved package.json scope')
             # The command is coordinator-owned and fixed, never supplied by the model.
             # This runs trusted project tests; a disposable checkout is not an OS sandbox.
-            result = subprocess.run(['npm', 'test'], cwd=checkout,
+            result = subprocess.run([npm_executable(), 'test'], cwd=checkout,
                 capture_output=True, text=True, timeout=90)
             evidence = review_result(proposal, returncode=result.returncode,
                 output=(result.stdout + result.stderr)[-200000:], patch=git(checkout, 'diff', '--', 'package.json'))
