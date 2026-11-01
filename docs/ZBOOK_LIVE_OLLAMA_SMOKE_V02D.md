@@ -143,3 +143,13 @@ Before connecting an older PC or iPhone, separately review:
 **Remaining**: Run the full Python suites and the reviewed cross-repo tests on exact current SHAs; a real ZBook Ollama call has not been executed here. There is still no server-side client-disconnect cancellation, idempotent duplicate-request registry or approved remote two-PC test. These gaps are tracked in the diagnostic issues.
 
 **November 1 integration note:** The ZBook examples now clone the unified [H.E.R.B.I.E. #93](https://github.com/jimedusot-beep/Herbie/pull/93) candidate rather than isolated #86. The gateway source bytes are identical and still pinned; the broader H.E.R.B.I.E. runtime does **not** automatically start. This is a local smoke test, not release approval.
+
+## Worker Bee #1 full local fixture acceptance (November 1, 2026)
+
+The reviewed Windows launcher now opts into **two real local model requests**, not only the original liveness smoke: (1) authenticated gateway inference with an intentionally wrong-token check, then (2) a JSON proposal from the installed model for the existing bounded `npm test` task.
+
+The second test creates a **new disposable, trusted Git repository fixture** containing a known tiny `package.json` and Node test, calls `agents/gateway_first_task.py` through the reviewed gateway, and checks that the proposal only adds the approved `npm test` alias, that the fixed Node test passes, and that the source checkout remains unchanged. It never clones a third-party codebase or runs model-supplied commands. It deliberately sends **no private H.E.R.B.I.E. source or personal memory** into the model.
+
+The fixture repo and intermediate test evidence are cleaned up. Output is a sanitized summary with `worker_fixture: "review_ready"` and `worker_tests: "passed"` **only after real checks pass**. Invalid model JSON, missing Node/Git, bad credentials, or test failures report blocked, never success. A small installed model may not reliably return the required JSON; that is a measurement we need to make on the actual ZBook, not a reason to weaken validation.
+
+To run the same combined acceptance manually, add `--run-fixture-task` to the local `integration/live_ollama_smoke.py --run-live ...` command. This **still has not been run on your physical ZBook** in this development session and does not prove multi-PC networking, physical movement, natural voice or a general coding agent.
