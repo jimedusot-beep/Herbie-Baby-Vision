@@ -8,12 +8,12 @@ import sys
 import tempfile
 import threading
 import unittest
-from herbie_gateway_client import GatewayError
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
 
 AGENTS = Path(__file__).resolve().parents[1] / 'agents'
 sys.path.insert(0, str(AGENTS))
+from herbie_gateway_client import GatewayError
 adapter = importlib.import_module('gateway_first_task')
 
 TOKEN = 'v' * 48
