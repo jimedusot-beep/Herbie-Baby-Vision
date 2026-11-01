@@ -195,6 +195,7 @@ class SmokeHarnessTests(unittest.TestCase):
 
     def test_worker_fixture_reports_safe_proposal_and_test_failure_categories(self):
         from gateway_first_task import ModelProposalRejected
+        from herbie_gateway_client import GatewayError
         scenarios = (
             (ModelProposalRejected('model_proposal_not_json'),
              'bounded_worker_model_proposal_not_json'),
