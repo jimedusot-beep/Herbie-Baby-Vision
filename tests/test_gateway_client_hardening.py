@@ -77,7 +77,7 @@ class GatewayClientHardeningTests(unittest.TestCase):
         try:
             client = clientmod.HerbieGatewayClient(
                 f'http://127.0.0.1:{server.server_port}', TOKEN, MODEL, timeout=3)
-            for reply in ('', ' ', '\\n\\t', '\\u2003'):
+            for reply in ('', ' ', '\n\t', '\u2003'):
                 with self.subTest(reply=repr(reply)):
                     server.fixture_reply = reply
                     with self.assertRaises(clientmod.GatewayError):
