@@ -193,6 +193,31 @@ class SmokeHarnessTests(unittest.TestCase):
             server.server_close()
             thread.join(timeout=3)
 
+    def test_worker_fixture_reports_safe_proposal_and_test_failure_categories(self):
+        from gateway_first_task import ModelProposalRejected
+        scenarios = (
+            (ModelProposalRejected('model_proposal_not_json'),
+             'bounded_worker_model_proposal_not_json'),
+            (ModelProposalRejected('model_proposal_unapproved'),
+             'bounded_worker_model_proposal_unapproved'),
+            (GatewayError('sensitive gateway details'),
+             'bounded_worker_gateway_request_failed'),
+            ({'status': 'blocked', 'test_exit_code': 1},
+             'bounded_worker_post_edit_tests_failed'),
+        )
+        for outcome, expected in scenarios:
+            with self.subTest(expected=expected):
+                if isinstance(outcome, Exception):
+                    patched = patch.object(smoke, 'run_gateway_task', side_effect=outcome)
+                else:
+                    patched = patch.object(smoke, 'run_gateway_task', return_value=outcome)
+                with patched:
+                    with self.assertRaises(smoke.SmokeBlocked) as caught:
+                        smoke.run_trusted_fixture_task(
+                            'model-fixture:1b', 'http://127.0.0.1:9876', 'unused')
+                self.assertEqual(str(caught.exception), expected)
+                self.assertNotIn('sensitive', str(caught.exception))
+
     def test_missing_model_blocks_without_gateway_server(self):
         fake = SimpleNamespace(
             MODEL_PATTERN=re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:/-]{0,99}\Z"),
