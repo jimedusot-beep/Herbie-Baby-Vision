@@ -14,6 +14,16 @@ from first_task import run_task, validate_proposal, SCRIPT, UNIT_SCRIPT
 from herbie_gateway_client import HerbieGatewayClient, validate_gateway_url
 
 
+class ModelProposalRejected(ValueError):
+    """A safe rejection reason; never includes model output or private data."""
+
+    def __init__(self, code):
+        if code not in ('model_proposal_not_json', 'model_proposal_unapproved'):
+            raise ValueError('Unexpected proposal rejection code')
+        super().__init__(code)
+        self.code = code
+
+
 TASK_PROMPT = (
     "Return ONLY a JSON object with exactly the fields 'script' and 'reason'. "
     "The script must be exactly 'npm run test:unit'. "
@@ -41,8 +51,11 @@ def propose_via_gateway(model, base_url, timeout, token):
     try:
         parsed = json.loads(reply)
     except (ValueError, TypeError, UnicodeError):
-        raise ValueError('Gateway model did not return the approved JSON proposal') from None
-    return validate_proposal(parsed)
+        raise ModelProposalRejected('model_proposal_not_json') from None
+    try:
+        return validate_proposal(parsed)
+    except ValueError:
+        raise ModelProposalRejected('model_proposal_unapproved') from None
 
 
 def run_gateway_task(repo, model, gateway_url, token, *, base='HEAD'):
