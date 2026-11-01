@@ -106,6 +106,25 @@ class SmokeHarnessTests(unittest.TestCase):
                 module = smoke.load_gateway_module(path)
             self.assertEqual(module.MARKER, "reviewed")
 
+    def test_cross_repo_contract_refuses_unreviewed_source_without_executing_it(self):
+        import os
+        import sys
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "worker_gateway.py"
+            marker = Path(folder) / "UNTRUSTED_EXECUTION_MARKER"
+            # If source was loaded without reviewing the blob, this marker would be written.
+            path.write_text("from pathlib import Path\\nPath(" + repr(str(marker))
+                            + ").write_text('unsafe')\\n", encoding="utf-8")
+            source = Path(__file__).resolve().parents[1] / "integration" / "test_cross_repo_gateway.py"
+            spec = importlib.util.spec_from_file_location("baby_cross_repo_pinned_test", source)
+            module = importlib.util.module_from_spec(spec)
+            with patch.dict(sys.modules, {"live_ollama_smoke": smoke}):
+                spec.loader.exec_module(module)
+                with patch.dict(os.environ, {"HERBIE_WORKER_GATEWAY_PY": str(path)}):
+                    with self.assertRaisesRegex(RuntimeError, "not the reviewed revision"):
+                        module.load_real_gateway()
+            self.assertFalse(marker.exists())
+
     def test_loopback_tags_allowlist_detects_installed_model(self):
         fixture = TagFixture({"models": [{"name": "gemma3:1b"},
                                          {"model": "qwen2.5-coder:1.5b"}]})
