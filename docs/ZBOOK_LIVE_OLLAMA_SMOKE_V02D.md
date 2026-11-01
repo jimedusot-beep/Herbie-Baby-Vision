@@ -153,3 +153,18 @@ The second test creates a **new disposable, trusted Git repository fixture** con
 The fixture repo and intermediate test evidence are cleaned up. Output is a sanitized summary with `worker_fixture: "review_ready"` and `worker_tests: "passed"` **only after real checks pass**. Invalid model JSON, missing Node/Git, bad credentials, or test failures report blocked, never success. A small installed model may not reliably return the required JSON; that is a measurement we need to make on the actual ZBook, not a reason to weaken validation.
 
 To run the same combined acceptance manually, add `--run-fixture-task` to the local `integration/live_ollama_smoke.py --run-live ...` command. This **still has not been run on your physical ZBook** in this development session and does not prove multi-PC networking, physical movement, natural voice or a general coding agent.
+
+## Windows failure-category diagnostics (November 1, 2026)
+
+A physical ZBook with Python 3.12.10, Node 26 and Ollama 0.40.12 completed the local H.E.R.B.I.E. verifier, and its Baby Vision gateway returned a real model response, but the separate bounded worker fixture initially reported `bounded_worker_fixture_failed`. A confirmed Windows `npm` subprocess resolution failure was fixed by selecting `npm.cmd` on Windows; the fixture still blocked afterward with both `gemma3:1b` and `gemma3:4b`. The root cause of the remaining worker failure has **not** yet been established.
+
+The local smoke harness now reports distinct, **non-sensitive** reason codes instead of echoing the model reply or tracebacks:
+
+- `bounded_worker_model_proposal_not_json`: The local model's reply was not valid standalone JSON.
+- `bounded_worker_model_proposal_unapproved`: JSON parsed, but the fixed allowlist rejected its contents.
+- `bounded_worker_gateway_request_failed`: The gateway inference request was unsuccessful.
+- `bounded_worker_trusted_command_failed` / `bounded_worker_trusted_command_timeout`: A fixed trusted Git/npm command failed or timed out.
+- `bounded_worker_fixture_local_error`: Another local fixture/validation error occurred; do not assume the model is responsible.
+- `bounded_worker_post_edit_tests_failed` / `bounded_worker_review_contract_failed`: The approved test/review invariants did not pass.
+
+These labels do not weaken proposal validation or authorize execution of model-supplied commands. The Windows launcher must be **re-downloaded and Git-blob verified** after the diagnostic script is changed because its hard-pinned smoke source SHA also changes. Do not hand-edit the expected SHA or bypass the source verification. The updated diagnostic path still requires actual on-ZBook confirmation before any claim of success or merge readiness.
