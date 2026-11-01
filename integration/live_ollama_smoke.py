@@ -27,7 +27,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agents"))
 from herbie_gateway_client import GatewayError, HerbieGatewayClient
-from gateway_first_task import run_gateway_task
+from gateway_first_task import run_gateway_task, ModelProposalRejected
 
 MAX_TAGS_BYTES = 262_144
 # Reviewed Git blob SHA of Herbie PR #86's worker_gateway.py.
@@ -130,11 +130,12 @@ def run_trusted_fixture_task(model, gateway_url, token):
             git(repo, 'commit', '-qm', 'Generated trusted fixture')
             evidence = run_gateway_task(repo, model, gateway_url, token)
             if (evidence.get('status') != 'ready_for_human_review'
-                    or evidence.get('test_exit_code') != 0
-                    or evidence.get('merge_allowed') is not False
+                    or evidence.get('test_exit_code') != 0):
+                raise SmokeBlocked('bounded_worker_post_edit_tests_failed')
+            if (evidence.get('merge_allowed') is not False
                     or evidence.get('allowed_files') != ['package.json']
                     or (repo / 'package.json').read_text(encoding='utf-8') != package):
-                raise SmokeBlocked('bounded_worker_fixture_not_verified')
+                raise SmokeBlocked('bounded_worker_review_contract_failed')
             return {'worker_fixture': 'review_ready',
                     'worker_tests': 'passed',
                     'source_checkout_unchanged': True,
@@ -142,8 +143,17 @@ def run_trusted_fixture_task(model, gateway_url, token):
                     'generated_commands_executed': False}
     except SmokeBlocked:
         raise
-    except (OSError, subprocess.SubprocessError, ValueError, KeyError, GatewayError):
-        raise SmokeBlocked('bounded_worker_fixture_failed') from None
+    except ModelProposalRejected as exc:
+        # Report a fixed category, never the model text or a prompt excerpt.
+        raise SmokeBlocked('bounded_worker_' + exc.code) from None
+    except GatewayError:
+        raise SmokeBlocked('bounded_worker_gateway_request_failed') from None
+    except subprocess.TimeoutExpired:
+        raise SmokeBlocked('bounded_worker_trusted_command_timeout') from None
+    except subprocess.CalledProcessError:
+        raise SmokeBlocked('bounded_worker_trusted_command_failed') from None
+    except (OSError, ValueError, KeyError):
+        raise SmokeBlocked('bounded_worker_fixture_local_error') from None
 
 def run_live(model, gateway_file, ollama_url="http://127.0.0.1:11434", *, run_fixture_task=False):
     """One local inference call, preceded by an authentication-negative check."""
