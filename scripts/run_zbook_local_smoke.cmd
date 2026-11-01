@@ -41,13 +41,13 @@ if errorlevel 1 (
   goto :blocked
 )
 
-echo Cloning separate reviewed source branches...
+echo Cloning the unified H.E.R.B.I.E. integration candidate and Baby Vision worker branch...
 git clone --quiet --depth 1 --single-branch --branch codex/v02d-real-ollama-local-smoke "https://github.com/jimedusot-beep/Herbie-Baby-Vision.git" "%WORK%\BabyVision"
 if errorlevel 1 (
   echo BLOCKED: Could not clone the Baby Vision review branch.
   goto :blocked
 )
-git clone --quiet --depth 1 --single-branch --branch codex/v02b-worker-inference-gateway "https://github.com/jimedusot-beep/Herbie.git" "%WORK%\HerbieGateway"
+git clone --quiet --depth 1 --single-branch --branch integration/herbie-engineering-20261031 "https://github.com/jimedusot-beep/Herbie.git" "%WORK%\HerbieGateway"
 if errorlevel 1 (
   echo BLOCKED: Could not clone the H.E.R.B.I.E. review branch.
   goto :blocked
