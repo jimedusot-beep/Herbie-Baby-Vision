@@ -7,7 +7,6 @@ HERBIE_WORKER_GATEWAY_PY=/path/to/Herbie/socratic-agent/socratic_agent/worker_ga
   python -m unittest discover -s integration -p 'test_*.py' -v
 """
 
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -20,6 +19,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'agents'))
 from herbie_gateway_client import GatewayError, HerbieGatewayClient
+from live_ollama_smoke import SmokeBlocked, load_gateway_module
 
 MODEL = 'qwen2.5-coder:1.5b'  # Synthetic model name, no model download.
 
@@ -28,10 +28,11 @@ def load_real_gateway():
     path = os.environ.get('HERBIE_WORKER_GATEWAY_PY', '')
     if not path or not Path(path).is_file():
         raise RuntimeError('Provide HERBIE_WORKER_GATEWAY_PY pointing to an approved Herbie source checkout')
-    spec = importlib.util.spec_from_file_location('herbie_worker_gateway_v02b', path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    try:
+        # Execute only the exact reviewed bytes, using the same pin as live smoke.
+        return load_gateway_module(path)
+    except SmokeBlocked:
+        raise RuntimeError('Gateway source is not the reviewed revision') from None
 
 
 class EndToEndContractTests(unittest.TestCase):
