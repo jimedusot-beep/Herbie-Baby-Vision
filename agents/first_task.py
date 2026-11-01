@@ -91,7 +91,7 @@ def git(repo, *arguments):
                           text=True, capture_output=True, timeout=20).stdout.strip()
 
 
-def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeout=90):
+def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeout=90, proposer=None):
     repo = Path(repo).resolve()
     commit = git(repo, 'rev-parse', '--verify', '--end-of-options', base + '^{commit}')
     with tempfile.TemporaryDirectory(prefix='baby-vision-task-') as directory:
@@ -108,7 +108,7 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
                 capture_output=True, text=True, timeout=90)
             if baseline.returncode == 0:
                 raise ValueError('npm test already succeeds; choose a task that is actually needed')
-            proposal = propose(model, base_url, timeout)
+            proposal = (proposer or propose)(model, base_url, timeout)
             after = patched_package(before, proposal)
             package_file.write_text(json.dumps(after, indent=2) + '\n')
             git(checkout, 'diff', '--check')
