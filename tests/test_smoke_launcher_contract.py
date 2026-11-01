@@ -20,6 +20,8 @@ class WindowsSmokeLauncherTests(unittest.TestCase):
         cmd = (ROOT / 'scripts' / 'run_zbook_local_smoke.cmd').read_text()
         self.assertIn(f'if /I not "%CLIENT_SHA%"=="{git_blob("agents/herbie_gateway_client.py")}"', cmd)
         self.assertIn(f'if /I not "%SMOKE_SHA%"=="{git_blob("integration/live_ollama_smoke.py")}"', cmd)
+        self.assertIn(f'if /I not "%FIRST_TASK_SHA%"=="{git_blob("agents/first_task.py")}"', cmd)
+        self.assertIn(f'if /I not "%GATEWAY_TASK_SHA%"=="{git_blob("agents/gateway_first_task.py")}"', cmd)
 
     def test_herbie_gateway_pin_matches_live_loader_and_launcher(self):
         smoke = (ROOT / 'integration' / 'live_ollama_smoke.py').read_text()
