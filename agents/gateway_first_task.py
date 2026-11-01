@@ -47,7 +47,7 @@ def propose_via_gateway(model, base_url, timeout, token):
     """Get data, never a command. A malformed response blocks the task."""
     base = require_local_gateway(base_url)
     client = HerbieGatewayClient(base, token, model, timeout=timeout)
-    reply = client.infer('coding', TASK_PROMPT, str(uuid4()))
+    reply = client.infer('npm_test_alias_v1', TASK_PROMPT, str(uuid4()))
     try:
         parsed = json.loads(reply)
     except (ValueError, TypeError, UnicodeError):
