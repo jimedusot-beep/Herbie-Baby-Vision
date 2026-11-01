@@ -168,3 +168,17 @@ The local smoke harness now reports distinct, **non-sensitive** reason codes ins
 - `bounded_worker_post_edit_tests_failed` / `bounded_worker_review_contract_failed`: The approved test/review invariants did not pass.
 
 These labels do not weaken proposal validation or authorize execution of model-supplied commands. The Windows launcher must be **re-downloaded and Git-blob verified** after the diagnostic script is changed because its hard-pinned smoke source SHA also changes. Do not hand-edit the expected SHA or bypass the source verification. The updated diagnostic path still requires actual on-ZBook confirmation before any claim of success or merge readiness.
+
+## Structured output for the first real Worker Bee proposal (November 1, 2026)
+
+Physical ZBook diagnostic verification established `bounded_worker_model_proposal_not_json` with installed `gemma3:4b`. This is specific evidence that the model's coding response, transported through the gateway, was not standalone parseable JSON. It is **not** evidence that the local Ollama inference, Windows npm invocation, or Baby Vision's fake-model fixture failed.
+
+The updated review-only H.E.R.B.I.E. gateway adds an **explicit task type** `npm_test_alias_v1` using Ollama's local API `/api/chat` `format` JSON schema parameter. The server supplies one immutable schema: `script` must equal `npm run test:unit`; `reason` must be a nonempty string of at most 500 characters; no other keys are permitted. The model cannot select the schema, supply tools, or choose runnable commands. The request uses temperature 0 and bounded output tokens. Other task types continue to use ordinary free-form generation without a JSON schema.
+
+Baby Vision's bounded task now uses `npm_test_alias_v1`; it **still** performs independent `json.loads` and `validate_proposal` checks before editing the disposable trusted fixture. Git/npm execution remains hardcoded and the result stays review-only, never automatically merged or deployed. The browser/voice/memory and physical robot integrations are not affected by this isolated smoke test.
+
+Both review branches and the Windows launcher pins changed. The latest launcher verifies the Baby Vision client, smoke harness, first task, gateway task adapter and the H.E.R.B.I.E. gateway against reviewed Git blob IDs before live execution. Local ZBook checkouts must be fast-forwarded and Git hashes rechecked before the live smoke; an old downloaded launcher cannot be presumed current.
+
+Automated synthetic tests are necessary but not sufficient. **Acceptance remains pending** until the user runs the updated local command with a real installed model and sees `status: completed`, `worker_fixture: review_ready` and `worker_tests: passed`. On schema/validation failures, do not strip Markdown, salvage arbitrary embedded JSON, weaken the allowlist or invent successful evidence.
+
+Reference: https://docs.ollama.com/capabilities/structured-outputs
