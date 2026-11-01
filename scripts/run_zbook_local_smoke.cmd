@@ -57,8 +57,12 @@ echo Verifying exact reviewed Git source blobs...
 set "CLIENT_SHA="
 set "SMOKE_SHA="
 set "GATEWAY_SHA="
+set "FIRST_TASK_SHA="
+set "GATEWAY_TASK_SHA="
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/herbie_gateway_client.py') do set "CLIENT_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:integration/live_ollama_smoke.py') do set "SMOKE_SHA=%%H"
+for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/first_task.py') do set "FIRST_TASK_SHA=%%H"
+for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/gateway_first_task.py') do set "GATEWAY_TASK_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\HerbieGateway" rev-parse HEAD:socratic-agent/socratic_agent/worker_gateway.py') do set "GATEWAY_SHA=%%H"
 
 if /I not "%CLIENT_SHA%"=="96056a3aed2328f4a55b1030788672de61c04235" (
@@ -67,6 +71,14 @@ if /I not "%CLIENT_SHA%"=="96056a3aed2328f4a55b1030788672de61c04235" (
 )
 if /I not "%SMOKE_SHA%"=="173210caba7350dae0d5ce80b3d704580cc46fbe" (
   echo BLOCKED: Smoke-test harness has changed since review. Do not bypass verification.
+  goto :blocked
+)
+if /I not "%FIRST_TASK_SHA%"=="b2447db692cd45076b3801c36192deb688972397" (
+  echo BLOCKED: Baby Vision coding worker has changed since review.
+  goto :blocked
+)
+if /I not "%GATEWAY_TASK_SHA%"=="dec81b7786517c37d84a3cdbda0990f653716944" (
+  echo BLOCKED: Baby Vision gateway task adapter has changed since review.
   goto :blocked
 )
 if /I not "%GATEWAY_SHA%"=="2a591120c01815698d9a0c7d4c7e3a1005b75936" (
