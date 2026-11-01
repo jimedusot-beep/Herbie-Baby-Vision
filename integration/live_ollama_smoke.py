@@ -14,6 +14,8 @@ import argparse
 import hashlib
 import types
 import json
+import subprocess
+import tempfile
 from pathlib import Path
 import secrets
 import sys
@@ -25,6 +27,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "agents"))
 from herbie_gateway_client import GatewayError, HerbieGatewayClient
+from gateway_first_task import run_gateway_task
 
 MAX_TAGS_BYTES = 262_144
 # Reviewed Git blob SHA of Herbie PR #86's worker_gateway.py.
@@ -95,7 +98,54 @@ def installed_models(ollama_url, validate_url):
         raise SmokeBlocked("ollama_tags_response_invalid") from None
 
 
-def run_live(model, gateway_file, ollama_url="http://127.0.0.1:11434"):
+
+def run_trusted_fixture_task(model, gateway_url, token):
+    """Exercise the bounded coding worker on NEW generated source, never owner's files.
+
+    This runs fixed Git/npm commands against a fixture authored by this test.
+    It is NOT an OS sandbox suitable for untrusted repository code.
+    """
+    def git(repo, *args):
+        subprocess.run(['git', '-C', str(repo), *args], check=True, timeout=20,
+                       capture_output=True, text=True)
+
+    try:
+        with tempfile.TemporaryDirectory(prefix='baby-worker-acceptance-') as tmp:
+            repo = Path(tmp) / 'trusted_fixture'
+            repo.mkdir()
+            git(repo, 'init', '-q')
+            git(repo, 'config', 'user.name', 'Worker fixture')
+            git(repo, 'config', 'user.email', 'worker@example.invalid')
+            package = json.dumps({'name': 'baby-worker-fixture', 'private': True,
+                'scripts': {'test:unit': 'node --test tests/*.test.cjs'}},
+                indent=2) + '\n'
+            (repo / 'package.json').write_text(package, encoding='utf-8')
+            (repo / 'tests').mkdir()
+            (repo / 'tests' / 'basic.test.cjs').write_text(
+                "const {test}=require('node:test');"
+                "const assert=require('node:assert/strict');"
+                "test('fixed fixture',()=>assert.equal(2+2,4));\\n",
+                encoding='utf-8')
+            git(repo, 'add', '.')
+            git(repo, 'commit', '-qm', 'Generated trusted fixture')
+            evidence = run_gateway_task(repo, model, gateway_url, token)
+            if (evidence.get('status') != 'ready_for_human_review'
+                    or evidence.get('test_exit_code') != 0
+                    or evidence.get('merge_allowed') is not False
+                    or evidence.get('allowed_files') != ['package.json']
+                    or (repo / 'package.json').read_text(encoding='utf-8') != package):
+                raise SmokeBlocked('bounded_worker_fixture_not_verified')
+            return {'worker_fixture': 'review_ready',
+                    'worker_tests': 'passed',
+                    'source_checkout_unchanged': True,
+                    'review_packet_saved': False,
+                    'generated_commands_executed': False}
+    except SmokeBlocked:
+        raise
+    except (OSError, subprocess.SubprocessError, ValueError, KeyError):
+        raise SmokeBlocked('bounded_worker_fixture_failed') from None
+
+def run_live(model, gateway_file, ollama_url="http://127.0.0.1:11434", *, run_fixture_task=False):
     """One local inference call, preceded by an authentication-negative check."""
     gateway = load_gateway_module(gateway_file)
     if not isinstance(model, str) or not gateway.MODEL_PATTERN.fullmatch(model):
@@ -140,7 +190,10 @@ def run_live(model, gateway_file, ollama_url="http://127.0.0.1:11434"):
             raise SmokeBlocked("real_model_returned_empty_reply")
 
         # Do not print, retain, write, or upload the actual prompt or reply.
+        worker_evidence = (run_trusted_fixture_task(model, url, token)
+                           if run_fixture_task else {"worker_fixture": "not_run"})
         return {
+            **worker_evidence,
             "status": "completed",
             "mode": "real_model_localhost",
             "model": model,
@@ -162,7 +215,9 @@ def run_live(model, gateway_file, ollama_url="http://127.0.0.1:11434"):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-live", action="store_true",
-                        help="Explicit authorization for one REAL local inference request")
+                        help="Explicit authorization for a REAL local model test")
+    parser.add_argument("--run-fixture-task", action="store_true",
+                        help="Also run the one allowed coding worker task on a newly generated trusted Git fixture")
     parser.add_argument("--model", help="Exact installed model name from ollama list")
     parser.add_argument("--gateway-file",
                         help="Path to reviewed Herbie PR #86 worker_gateway.py checkout")
@@ -176,7 +231,8 @@ def main(argv=None):
                           "merge_allowed": False}))
         return 2
     try:
-        result = run_live(args.model, args.gateway_file, args.ollama_url)
+        result = run_live(args.model, args.gateway_file, args.ollama_url,
+                          run_fixture_task=args.run_fixture_task)
     except (SmokeBlocked, ValueError) as exc:
         # Only controlled reason codes from this module are exposed.
         reason = str(exc) if isinstance(exc, SmokeBlocked) else "invalid_local_endpoint"
