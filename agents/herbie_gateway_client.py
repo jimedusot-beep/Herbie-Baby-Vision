@@ -62,7 +62,7 @@ def validate_gateway_url(base_url):
 class HerbieGatewayClient:
     """One-call inference transport; task execution and permissions stay in Baby Vision."""
 
-    def __init__(self, base_url, token, model, timeout=30):
+    def __init__(self, base_url, token, model, timeout=60):
         self.base_url = validate_gateway_url(base_url)
         if not isinstance(token, str) or not re.fullmatch(r'[A-Za-z0-9._~-]{32,256}', token):
             raise ValueError('A sufficiently long gateway bearer token is required')
@@ -138,6 +138,6 @@ class HerbieGatewayClient:
         if (not isinstance(body, dict) or set(body) != {'schema_version', 'request_id', 'model', 'reply'} or
                 type(body['schema_version']) is not int or body['schema_version'] != 1 or body['request_id'] != request_id or
                 body['model'] != self.model or not isinstance(body['reply'], str) or
-                len(body['reply']) > 20_000):
+                not body['reply'].strip() or len(body['reply']) > 20_000):
             raise GatewayError('Invalid H.E.R.B.I.E. gateway response contract')
         return body['reply']
