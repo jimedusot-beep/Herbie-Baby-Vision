@@ -149,6 +149,50 @@ class SmokeHarnessTests(unittest.TestCase):
         with self.assertRaises(smoke.SmokeBlocked):
             smoke.installed_models(fixture.url, lambda url: url)
 
+
+    def test_generated_trusted_git_fixture_runs_bounded_worker_without_real_model(self):
+        token = 'w' * 48
+        calls = []
+        class FixtureGateway(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+            def do_POST(self):
+                request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                calls.append(request)
+                if self.headers.get('Authorization') != 'Bearer ' + token:
+                    self.send_response(403)
+                    self.send_header('Content-Length', '0')
+                    self.end_headers()
+                    return
+                proposal = json.dumps({'script':'npm run test:unit',
+                                       'reason':'Use the approved existing unit suite.'})
+                answer = json.dumps({'schema_version':1,
+                                     'request_id':request['request_id'],
+                                     'model':request['model'],
+                                     'reply':proposal}).encode()
+                self.send_response(200)
+                self.send_header('Content-Length', str(len(answer)))
+                self.end_headers()
+                self.wfile.write(answer)
+
+        server = ThreadingHTTPServer(('127.0.0.1', 0), FixtureGateway)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            url = f'http://127.0.0.1:{server.server_port}'
+            result = smoke.run_trusted_fixture_task('gemma3:1b', url, token)
+            self.assertEqual(result['worker_fixture'], 'review_ready')
+            self.assertEqual(result['worker_tests'], 'passed')
+            self.assertTrue(result['source_checkout_unchanged'])
+            self.assertFalse(result['review_packet_saved'])
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(calls[0]['task_type'], 'coding')
+            self.assertNotIn('model_reply', json.dumps(result))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
+
     def test_missing_model_blocks_without_gateway_server(self):
         fake = SimpleNamespace(
             MODEL_PATTERN=re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:/-]{0,99}\Z"),
