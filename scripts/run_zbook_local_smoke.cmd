@@ -65,7 +65,7 @@ if /I not "%CLIENT_SHA%"=="a9d67ec39758555cbf43f076f8b4f95f292ead44" (
   echo BLOCKED: Baby Vision client has changed since review. Do not bypass verification.
   goto :blocked
 )
-if /I not "%SMOKE_SHA%"=="f7069f7c70b6d4385675e83e5c4fd956ae9e3ee6" (
+if /I not "%SMOKE_SHA%"=="b9893111b04320678fc1c2755365b570a9fe9c91" (
   echo BLOCKED: Smoke-test harness has changed since review. Do not bypass verification.
   goto :blocked
 )
@@ -83,8 +83,8 @@ if errorlevel 1 (
 )
 
 echo.
-echo Running ONE real local inference with installed gemma3:1b...
-py -3.12 "%WORK%\BabyVision\integration\live_ollama_smoke.py" --run-live --model gemma3:1b --gateway-file "%WORK%\HerbieGateway\socratic-agent\socratic_agent\worker_gateway.py"
+echo Running real local inference AND one bounded coding task on a generated trusted fixture...
+py -3.12 "%WORK%\BabyVision\integration\live_ollama_smoke.py" --run-live --run-fixture-task --model gemma3:1b --gateway-file "%WORK%\HerbieGateway\socratic-agent\socratic_agent\worker_gateway.py"
 if errorlevel 1 (
   echo.
   echo The model test was BLOCKED or failed. See the reason code above.
@@ -92,7 +92,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo SUCCESS: The authenticated local gateway received a real model reply.
+echo SUCCESS: Authenticated local inference and bounded worker fixture completed.
 echo This does not prove remote networking, merged code, or production safety.
 echo Review copies: "%WORK%"
 echo Copy only the sanitized JSON result above into ChatGPT.
