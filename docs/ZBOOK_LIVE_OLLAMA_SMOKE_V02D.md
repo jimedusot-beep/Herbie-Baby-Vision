@@ -66,7 +66,7 @@ If Ollama isn't listening at `http://127.0.0.1:11434`, the script reports a bloc
 ## Reviewed gateway source protection
 
 The ZBook harness now requires the **hardened** H.E.R.B.I.E. gateway Git blob
-`c27250693d9e8593a6ddb66ac567e9a68eeb8e36`. That corresponds to the
+`feb3910ab8feab8210db03dff3a7d2a007a526b0`. That corresponds to the
 gateway changes in H.E.R.B.I.E. draft PR #86: bounded connection handlers,
 HTTP header/JSON ambiguity rejection, UTF-8 response limits and a 60,000-byte serialized-response cap.
 
@@ -131,3 +131,13 @@ Before connecting an older PC or iPhone, separately review:
 5. A safe, authenticated Windows worker execution environment with restricted tools and no production credentials.
 
 **No merges, remote access enablement, private memory access, or live robotics actions are authorized by this test.**
+
+## Connection contract hardening (November 1, 2026)
+
+- Gateway code on PR #86 now rejects **empty and whitespace-only model output**, including a fake or injected inference result. The Baby Vision client independently rejects the same.
+- Normal client timeout is **60 seconds**, giving the gateway's **45-second Ollama socket timeout** a 15-second allowance for overhead. This is a per-operation socket limit, **not a guaranteed total wall-clock or cancellation budget**; slow trickle responses and network failures still require explicit acceptance tests.
+- The synthetic cross-repository test now calls the **same reviewed-bytes loader** as the opt-in live smoke harness. It refuses unknown gateway source and never imports an unverified pathname.
+- Both the live harness and the Windows launcher have updated expected Git blobs. **Do not remove the source checks** to get a green test: review any changed gateway source and update pins only after code review.
+- Existing constraints remain: loopback-only, one synthetic/real inference at a time, no private memories, no tools, no remote port, no GitHub merge, no hardware controls.
+
+**Remaining**: Run the full Python suites and the reviewed cross-repo tests on exact current SHAs; a real ZBook Ollama call has not been executed here. There is still no server-side client-disconnect cancellation, idempotent duplicate-request registry or approved remote two-PC test. These gaps are tracked in the diagnostic issues.
