@@ -8,6 +8,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from herbie_gateway_client import GatewayError
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
 
@@ -87,7 +88,7 @@ class GatewayFirstTaskTests(unittest.TestCase):
             fixture = FakeAuthenticatedGateway(reply=reply)
             try:
                 with self.subTest(reply=reply), self.assertRaises(
-                        (ValueError, adapter.HerbieGatewayClient.__module__ and Exception)):
+                        (ValueError, GatewayError)):
                     adapter.propose_via_gateway(MODEL, fixture.url, 3, TOKEN)
                 self.assertEqual(len(fixture.requests), 1)
             finally:
