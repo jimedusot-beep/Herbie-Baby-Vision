@@ -51,3 +51,12 @@ To preview, open `dashboard/index.html` from a trusted local static-file setup, 
 **No third-party source was copied and no external repository fork/clone was created.** This is original small code that reuses our existing worker packet contract; a full OpenHands/OpenCode installation before a verified ZBook benchmark would add dependencies and resource risk. Use the engineering knowledge bank's interface-control and measured-latency approach: exact interfaces, measurable budgets and evidence rather than fictional autonomy.
 
 Related: [Herbie #94](https://github.com/jimedusot-beep/Herbie/issues/94), [Baby Vision #6](https://github.com/jimedusot-beep/Herbie-Baby-Vision/issues/6), [Baby Vision first worker](FIRST_WORKER.md).
+
+## Maker-community research for later physical Bees (not in this PR)
+
+- [Hackster: Stack-Chan Minimal](https://www.hackster.io/UtaAoya/stack-chan-minimal-tiny-body-local-ai-soul-23cba5), published August 2026, uses a small face/body and places STT, LLM and TTS on a more capable local host. This **supports our phone/mini-body ↔ ZBook brain separation**, not any claim our own hardware works. The showcase has no assembly instructions; hardware compatibility must still be confirmed.
+- [Hackster: Boafoc The Helper](https://www.hackster.io/calvinsewornu123/boafoc-the-helper-multilingual-african-ai-assistant-7841a0) documents a work-in-progress Pi voice stack using VAD, whisper, Piper and Ollama. It is **an architectural reference**, not a validated H.E.R.B.I.E. module or shopping list.
+- [Reddit local-agent sandbox discussion](https://www.reddit.com/r/LocalLLM/comments/1x0qo3e/running_coding_agents_locally_do_you_sandbox_them/) highlights credential leakage and isolation tradeoffs. Anecdotal community discussion; compare against upstream security documentation before adopting advice.
+- [Reddit OpenCode + Ollama experiences](https://www.reddit.com/r/opencodeCLI/comments/1r1ylk2/my_experience_with_working_with_opencode_local/) report acceptable simple chat and poor results on more demanding tool-driven tasks. Avoid assuming a model's verbal fluency predicts file-editing reliability.
+
+No hardware parts are selected or approved by these examples. Keep physical robots, kiosk modes and autonomous assembly outside the Worker Bee #1 release gate.
