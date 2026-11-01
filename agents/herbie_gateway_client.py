@@ -14,7 +14,7 @@ from uuid import UUID
 
 MAX_PROMPT_BYTES = 12_000
 MAX_RESPONSE_BYTES = 65_536
-TASK_TYPES = frozenset({'coding', 'testing', 'research', 'review'})
+TASK_TYPES = frozenset({'coding', 'testing', 'research', 'review', 'npm_test_alias_v1'})
 
 
 class GatewayError(RuntimeError):
