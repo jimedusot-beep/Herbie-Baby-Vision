@@ -14,7 +14,7 @@ The coordinator can only add an `npm test` alias to a trusted repository that al
 4. Execute `agents/gateway_first_task.py` against a **trusted disposable fixture or approved source checkout**, with `--repo`, `--model`, `--gateway-url http://127.0.0.1:8787`, and `--output` pointing to a private path outside the repository.
 5. The adapter sends one fixed, scoped **coding** request to the gateway and accepts **only** a strict JSON proposal with `script` and `reason`. Blank results, extra fields, malformed JSON, forbidden commands and gateway failures block the task. It never auto-retries.
 6. The existing coordinator validates the returned data independently, runs its fixed tests in the disposable checkout and produces private evidence. It cannot merge.
-7. Open that JSON in the offline review dashboard in [Worker Bee PR #7](https://github.com/jimedusot-beep/Herbie-Baby-Vision/pull/7). That dashboard *only* displays claimed evidence; it does not independently verify tests or approve a GitHub PR.
+7. Open that JSON in the offline review dashboard at [dashboard/index.html](../dashboard/index.html) on this same unified review branch. That dashboard *only* displays claimed evidence; it does not independently verify tests or approve a GitHub PR.
 
 For this V0.3 adapter, **remote Tailscale/LAN endpoints are refused even though the lower-level gateway client can represent some HTTPS Tailscale addresses**. Real two-PC networking requires a separate reviewed milestone.
 
