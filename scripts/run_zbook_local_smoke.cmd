@@ -61,15 +61,15 @@ for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/herbi
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:integration/live_ollama_smoke.py') do set "SMOKE_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\HerbieGateway" rev-parse HEAD:socratic-agent/socratic_agent/worker_gateway.py') do set "GATEWAY_SHA=%%H"
 
-if /I not "%CLIENT_SHA%"=="8de4ac1463eeaf890554ee302a55d6e61ab0ae88" (
+if /I not "%CLIENT_SHA%"=="a9d67ec39758555cbf43f076f8b4f95f292ead44" (
   echo BLOCKED: Baby Vision client has changed since review. Do not bypass verification.
   goto :blocked
 )
-if /I not "%SMOKE_SHA%"=="6c8b7abfd2f245319e1528483453cbefa4d3802a" (
+if /I not "%SMOKE_SHA%"=="f7069f7c70b6d4385675e83e5c4fd956ae9e3ee6" (
   echo BLOCKED: Smoke-test harness has changed since review. Do not bypass verification.
   goto :blocked
 )
-if /I not "%GATEWAY_SHA%"=="c27250693d9e8593a6ddb66ac567e9a68eeb8e36" (
+if /I not "%GATEWAY_SHA%"=="feb3910ab8feab8210db03dff3a7d2a007a526b0" (
   echo BLOCKED: H.E.R.B.I.E. gateway has changed since review. Do not bypass verification.
   goto :blocked
 )
