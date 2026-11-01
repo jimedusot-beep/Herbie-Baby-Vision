@@ -32,7 +32,7 @@ from gateway_first_task import run_gateway_task, ModelProposalRejected
 MAX_TAGS_BYTES = 262_144
 # Reviewed Git blob SHA of Herbie PR #86's worker_gateway.py.
 # Re-review and update this pin whenever the gateway module changes.
-REVIEWED_GATEWAY_GIT_BLOB_SHA = "feb3910ab8feab8210db03dff3a7d2a007a526b0"
+REVIEWED_GATEWAY_GIT_BLOB_SHA = "2a591120c01815698d9a0c7d4c7e3a1005b75936"
 TEST_PROMPT = "In one short sentence, explain what a Python unit test checks."
 
 
