@@ -1,0 +1,49 @@
+name: Baby Vision - real repository read-only pilot
+on:
+  pull_request:
+    paths:
+      - 'agents/repository_search.py'
+      - '.github/workflows/trivia-lobby-readonly-pilot.yml'
+      - 'docs/TRIVIA_LOBBY_PILOT.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-source-smoke:
+    name: Committed-file search on public Trivia Lobby
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hive
+      - uses: actions/checkout@v4
+        with:
+          repository: jimedusot-beep/Trivia-Lobby
+          ref: 1841025f8e5be153350e4cb44ad772a417448bab
+          path: hive/work/trivia-lobby
+          persist-credentials: false
+      - name: Check real repository inventory and search (no app execution)
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib, subprocess, sys
+          sys.path.insert(0, str(pathlib.Path('hive/agents').resolve()))
+          import repository_search
+          repo = pathlib.Path('hive/work/trivia-lobby')
+          expected = '1841025f8e5be153350e4cb44ad772a417448bab'
+          inventory = repository_search.manifest(repo, max_paths=1000)
+          assert inventory['source_commit'] == expected, 'pinned commit mismatch'
+          assert 'server/room-checkpoints.ts' in inventory['paths'], 'real source file not indexed'
+          result = repository_search.search(repo, 'room checkpoint', max_hits=20)
+          assert result['source_commit'] == expected, 'source revision changed'
+          assert result['hits'], 'no source references found'
+          assert any('checkpoint' in hit['path'].lower() for hit in result['hits']), 'checkpoint source not retrieved'
+          assert all(h['line'] > 0 and h['path'] for h in result['hits']), 'invalid file/line evidence'
+          status = subprocess.check_output(['git', '-C', str(repo), 'status', '--porcelain'], text=True)
+          assert not status.strip(), 'read-only lookup modified source files'
+          print(f"Indexed {inventory['tracked_searchable']} searchable files, returned {len(result['hits'])} hits")
+          print(f"Partial scan: {result['partial_scan']}; files searched: {result['searched_files']}")
+          PY
