@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install signed-approval test dependency
+        run: python -m pip install 'cryptography>=43,<47'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

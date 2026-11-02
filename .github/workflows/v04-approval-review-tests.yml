@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install signed-approval test dependency
+        run: python -m pip install 'cryptography>=43,<47'
       - name: Offline regression suite — no Ollama, Docker or project execution
         env:
           PYTHONDONTWRITEBYTECODE: '1'

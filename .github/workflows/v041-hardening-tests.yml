@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install signed-approval test dependency
+        run: python -m pip install 'cryptography>=43,<47'
       - name: Read-only synthetic regression suite (no Ollama or Docker)
         env:
           PYTHONDONTWRITEBYTECODE: '1'
