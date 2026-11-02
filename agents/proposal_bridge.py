@@ -35,7 +35,10 @@ class ProposalError(ValueError):
 
 
 def stopped():
-    investigation.stopped()
+    try:
+        investigation.stopped()
+    except investigation.InvestigationError as exc:
+        raise ProposalError(str(exc)) from exc
 
 
 def _source_file(commit, path, citations=None):
@@ -208,7 +211,11 @@ def propose(question, model='qwen2.5-coder:1.5b', *, investigator=None, writer=N
 def save(result):
     """Write a patch and evidence report outside the repository; never apply it."""
     stopped()
-    if investigation.check_work() != result['source_commit']:
+    try:
+        current_commit = investigation.check_work()
+    except investigation.InvestigationError as exc:
+        raise ProposalError(str(exc)) from exc
+    if current_commit != result['source_commit']:
         raise ProposalError('Source revision changed before saving')
     patch = result['diff']
     if hashlib.sha256(patch.encode()).hexdigest() != result['diff_sha256']:
