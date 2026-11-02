@@ -86,7 +86,7 @@ def evidence(question):
             if len(candidates) >= 2:
                 continue
             data = repository_search._git(WORK, 'cat-file', 'blob', objects[path])
-            if len(data) > 8000 or b'\0' in data:
+            if len(data) > repository_search.MAX_BLOB_BYTES or b'\0' in data:
                 rejected.add(path)
                 continue
             try:

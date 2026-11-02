@@ -1,0 +1,66 @@
+name: Baby Vision V0.4.2 - retrieval coverage
+on:
+  pull_request:
+    paths:
+      - 'agents/repository_search.py'
+      - 'agents/readonly_investigate.py'
+      - 'agents/proposal_bridge.py'
+      - 'tests/test_retrieval_v042.py'
+      - 'docs/RETRIEVAL_V042.md'
+      - '.github/workflows/v042-retrieval-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic:
+    name: Python ${{ matrix.python }} synthetic safety tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.9', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run all read-only regression tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python -B -m unittest discover -s tests -p 'test_*.py' -q
+  real-source:
+    name: Pinned public Trivia Lobby read-only search
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hive
+      - uses: actions/checkout@v4
+        with:
+          repository: jimedusot-beep/Trivia-Lobby
+          ref: 1841025f8e5be153350e4cb44ad772a417448bab
+          path: hive/work/trivia-lobby
+          persist-credentials: false
+      - name: Verify broader committed-source coverage
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          sys.path.insert(0, str(Path('hive/agents').resolve()))
+          import repository_search as s
+          root = Path('hive/work/trivia-lobby')
+          expected = '1841025f8e5be153350e4cb44ad772a417448bab'
+          result = s.search(root, 'room checkpoint', max_hits=20)
+          assert result['source_commit'] == expected
+          assert result['searched_files'] >= 500, result
+          assert result['partial_scan'] is False, result
+          assert result['omitted_due_to_budget'] == 0
+          assert any('checkpoint' in h['path'].lower() for h in result['hits'])
+          assert all(h['line'] > 0 for h in result['hits'])
+          assert subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain'], text=True).strip() == ''
+          print(f"Scanned {result['searched_files']} files, {result['bytes_scanned']} bytes; cited hits: {len(result['hits'])}")
+          PY
