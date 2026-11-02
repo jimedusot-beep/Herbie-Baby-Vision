@@ -16,9 +16,11 @@ import sys
 try:
     from . import readonly_investigate as investigation
     from . import repository_search as search
+    from . import artifact_io
 except ImportError:
     import readonly_investigate as investigation
     import repository_search as search
+    import artifact_io
 
 MAX_PATCH_BYTES = 12000
 MAX_LINES = 120
@@ -184,15 +186,15 @@ def save(result):
         raise ProposalError('Proposal checksum does not match')
     validate_patch(patch, result['target'])
     stopped()
-    directory = investigation.REPORTS
-    directory.mkdir(parents=True, exist_ok=True)
     name = f'guided-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}-{result["diff_sha256"][:12]}'
     record = {k: v for k, v in result.items() if k != 'diff'}
-    with (directory / f'{name}.json').open('x', encoding='utf-8') as handle:
-        json.dump(record, handle, indent=2, ensure_ascii=True)
-        handle.write('\n')
-    with (directory / f'{name}.diff').open('x', encoding='utf-8', newline='\n') as handle:
-        handle.write(patch)
+    try:
+        # Never create a review artifact through a symlinked proposals/ folder.
+        artifact_io.write_exclusive(investigation.HIVE, 'proposals', name + '.diff', patch.encode('utf-8'))
+        artifact_io.write_exclusive(investigation.HIVE, 'proposals', name + '.json',
+                                    (json.dumps(record, indent=2, ensure_ascii=True) + '\n').encode('utf-8'))
+    except artifact_io.ArtifactError as exc:
+        raise ProposalError('Unsafe proposal output directory or artifact collision') from exc
     return name
 
 

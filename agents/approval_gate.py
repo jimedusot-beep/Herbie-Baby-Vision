@@ -20,8 +20,10 @@ import sys
 
 try:
     from . import proposal_bridge as bridge
+    from . import artifact_io
 except ImportError:
     import proposal_bridge as bridge
+    import artifact_io
 
 ACTIONS = {'apply_disposable_patch': 'APPLY', 'run_isolated_tests': 'TEST'}
 APPROVAL_DURATION = timedelta(hours=1)
@@ -118,20 +120,14 @@ def _marker(name, suffix):
 
 
 def _safe_write(path, contents):
-    if path.parent.is_symlink():
-        raise ApprovalError('Refusing symlinked approvals directory')
-    path.parent.mkdir(parents=True, exist_ok=True)
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
-    if hasattr(os, 'O_NOFOLLOW'):
-        flags |= os.O_NOFOLLOW
+    """Use the same guarded output policy for approval *records* as proposals."""
+    root = bridge.investigation.HIVE
+    if path.parent != root / 'approvals':
+        raise ApprovalError('Unexpected decision destination')
     try:
-        fd = os.open(path, flags, 0o600)
-    except FileExistsError as exc:
-        raise ApprovalError('Decision already exists; cannot overwrite it') from exc
-    with os.fdopen(fd, 'w', encoding='utf-8') as out:
-        out.write(contents)
-        out.flush()
-        os.fsync(out.fileno())
+        artifact_io.write_exclusive(root, 'approvals', path.name, contents.encode('utf-8'))
+    except artifact_io.ArtifactError as exc:
+        raise ApprovalError('Unsafe decision destination or existing record') from exc
 
 
 def _blocked(name, action):

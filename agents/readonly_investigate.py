@@ -15,9 +15,10 @@ import subprocess
 import sys
 
 try:
-    from . import repository_search
+    from . import repository_search, artifact_io
 except ImportError:
     import repository_search
+    import artifact_io
 
 HIVE = Path(__file__).resolve().parents[1]
 WORK = HIVE / 'work' / 'trivia-lobby'
@@ -158,7 +159,10 @@ def validate_report(raw, source):
     allowed = {(h['path'], h['line']) for h in source['evidence']}
     if not isinstance(cites, list) or len(cites) > 8:
         raise InvestigationError('Model report has invalid citations')
-    if any(not isinstance(c, dict) or (c.get('path'), c.get('line')) not in allowed
+    if any(not isinstance(c, dict)
+           or not isinstance(c.get('path'), str)
+           or type(c.get('line')) is not int or c['line'] < 1
+           or (c['path'], c['line']) not in allowed
            for c in cites):
         raise InvestigationError('Model invented a source citation')
     if not cites and data['confidence'] != 'low':
@@ -182,17 +186,23 @@ def investigate(question, model, *, ask=_ask_local):
 
 def save_report(report, model):
     stopped()
-    REPORTS.mkdir(parents=True, exist_ok=True)
-    LOGS.mkdir(parents=True, exist_ok=True)
+    # Validate both destinations before writing either artifact.
+    try:
+        artifact_io.ensure_directory(HIVE, 'proposals')
+        artifact_io.ensure_directory(HIVE, 'logs')
+    except artifact_io.ArtifactError as exc:
+        raise InvestigationError('Unsafe artifact destination') from exc
     body = json.dumps(report, indent=2, ensure_ascii=True) + '\n'
     digest = hashlib.sha256(body.encode()).hexdigest()
     name = f'investigation-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}-{digest[:12]}.json'
-    with (REPORTS / name).open('x', encoding='utf-8') as file:
-        file.write(body)
-    with (LOGS / 'audit.jsonl').open('a', encoding='utf-8') as log:
-        log.write(json.dumps({'event': 'read_only_investigation',
-                              'source_commit': report['source_commit'], 'model': model,
-                              'report_sha256': digest, 'file': name}) + '\n')
+    try:
+        artifact_io.write_exclusive(HIVE, 'proposals', name, body.encode('utf-8'))
+        audit = json.dumps({'event': 'read_only_investigation',
+                            'source_commit': report['source_commit'], 'model': model,
+                            'report_sha256': digest, 'file': name}) + '\n'
+        artifact_io.append_log(HIVE, 'audit.jsonl', audit.encode('utf-8'))
+    except artifact_io.ArtifactError as exc:
+        raise InvestigationError('Unsafe artifact destination or write failure') from exc
     return name
 
 
