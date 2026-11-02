@@ -231,6 +231,8 @@ def verify(name, action, *, public_key_file, trusted_fingerprint):
         raise SignedApprovalError('Approval signature invalid') from exc
     legacy._guard()
     return {'proposal': proposal['name'], 'action': action, 'expires_at': payload['expires_at'],
+            'nonce': payload['nonce'], 'report_sha256': payload['report_sha256'],
+            'diff_sha256': payload['diff_sha256'], 'source_commit': payload['source_commit'],
             'signed': True, 'key_sha256': actual,
             'warning': 'Signed decision only; no execution authority or replay service exists'}
 
