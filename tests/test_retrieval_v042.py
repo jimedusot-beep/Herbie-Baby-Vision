@@ -20,6 +20,8 @@ class RetrievalV042(unittest.TestCase):
         self.git('init','-q')
         self.git('config','user.name','Fixture')
         self.git('config','user.email','fixture@example.invalid')
+        self.git('config','gc.auto','0')
+        self.git('config','maintenance.auto','false')
         (self.repo/'src').mkdir()
         for i in range(610):
             (self.repo/'src'/f'part{i:03}.ts').write_text(f'export const item{i} = "normal";\n')
