@@ -107,6 +107,15 @@ def set_stop(root):
     redirected markers and other filesystem types. No owner file is overwritten.
     """
     with _stop_parent(root) as (path, dfd):
+        # On Windows O_CREAT|O_EXCL is not guaranteed to reject a dangling
+        # reparse link. Check lexically first, then retain exclusive creation
+        # for ordinary races. This is not isolation from a hostile same-user
+        # process concurrently modifying the directory.
+        preexisting = _stop_lstat(path, dfd)
+        if preexisting is not None:
+            if not _stop_regular(path, preexisting):
+                raise ArtifactError('Refusing redirected or nonregular STOP marker')
+            return False
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
         try:
             if dfd is not None:
