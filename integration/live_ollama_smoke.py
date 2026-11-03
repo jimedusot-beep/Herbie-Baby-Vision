@@ -1,6 +1,6 @@
 """Explicit, localhost-only smoke test against an INSTALLED Ollama model.
 
-Requires an explicitly reviewed Herbie PR #86 gateway module file. This script
+Requires an explicitly reviewed Herbie PR #93 gateway module file. This script
 never installs models, opens a LAN port, starts background services, executes AI
 output, or sends prompts/responses/secrets to logs. Unlike synthetic integration
 tests, --run-live *does* ask a real local Ollama model to generate one reply.
@@ -30,9 +30,9 @@ from herbie_gateway_client import GatewayError, HerbieGatewayClient
 from gateway_first_task import run_gateway_task, ModelProposalRejected
 
 MAX_TAGS_BYTES = 262_144
-# Reviewed Git blob SHA of Herbie PR #86's worker_gateway.py.
+# Reviewed Git blob SHA of Herbie PR #93's worker_gateway.py.
 # Re-review and update this pin whenever the gateway module changes.
-REVIEWED_GATEWAY_GIT_BLOB_SHA = "2a591120c01815698d9a0c7d4c7e3a1005b75936"
+REVIEWED_GATEWAY_GIT_BLOB_SHA = "eef2eebc43fc7aaec67ebd3cc652ee3b0dd7d9c4"
 TEST_PROMPT = "In one short sentence, explain what a Python unit test checks."
 
 
@@ -230,7 +230,7 @@ def main(argv=None):
                         help="Also run the one allowed coding worker task on a newly generated trusted Git fixture")
     parser.add_argument("--model", help="Exact installed model name from ollama list")
     parser.add_argument("--gateway-file",
-                        help="Path to reviewed Herbie PR #86 worker_gateway.py checkout")
+                        help="Path to reviewed Herbie PR #93 worker_gateway.py checkout")
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434",
                         help="Loopback-only Ollama URL (never a LAN or public address)")
     args = parser.parse_args(argv)

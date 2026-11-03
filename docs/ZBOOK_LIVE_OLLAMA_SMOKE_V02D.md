@@ -66,7 +66,7 @@ If Ollama isn't listening at `http://127.0.0.1:11434`, the script reports a bloc
 ## Reviewed gateway source protection
 
 The ZBook harness now requires the **hardened** H.E.R.B.I.E. gateway Git blob
-`feb3910ab8feab8210db03dff3a7d2a007a526b0`. That corresponds to the
+`eef2eebc43fc7aaec67ebd3cc652ee3b0dd7d9c4`. That corresponds to the
 gateway changes in H.E.R.B.I.E. draft PR #86: bounded connection handlers,
 HTTP header/JSON ambiguity rejection, UTF-8 response limits and a 60,000-byte serialized-response cap.
 
@@ -142,7 +142,7 @@ Before connecting an older PC or iPhone, separately review:
 
 **Remaining**: Run the full Python suites and the reviewed cross-repo tests on exact current SHAs; a real ZBook Ollama call has not been executed here. There is still no server-side client-disconnect cancellation, idempotent duplicate-request registry or approved remote two-PC test. These gaps are tracked in the diagnostic issues.
 
-**November 1 integration note:** The ZBook examples now clone the unified [H.E.R.B.I.E. #93](https://github.com/jimedusot-beep/Herbie/pull/93) candidate rather than isolated #86. The gateway source bytes are identical and still pinned; the broader H.E.R.B.I.E. runtime does **not** automatically start. This is a local smoke test, not release approval.
+**November 1 integration note:** The ZBook examples now clone the unified [H.E.R.B.I.E. #93](https://github.com/jimedusot-beep/Herbie/pull/93) candidate rather than isolated #86. The gateway's per-process replay guard is now pinned to the reviewed source blob; the broader H.E.R.B.I.E. runtime does **not** automatically start. This is a local smoke test, not release approval.
 
 ## Worker Bee #1 full local fixture acceptance (November 1, 2026)
 
