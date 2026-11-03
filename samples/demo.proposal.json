@@ -1,0 +1,27 @@
+{
+  "source_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "query": "room checkpoint recovery",
+  "model": "synthetic-fixture-not-ollama",
+  "target": "server/room-checkpoints.ts",
+  "citations": [
+    {
+      "path": "server/room-checkpoints.ts",
+      "line": 42
+    }
+  ],
+  "analysis": {
+    "summary": "Synthetic example only: reconnect may need a state guard.",
+    "suspected_cause": "Synthetic fixture: checkpoint may be reused after a stale session.",
+    "suggested_change": "Synthetic fixture: consider checking the reconnect session before restoring.",
+    "confidence": "medium",
+    "citations": [
+      {
+        "path": "server/room-checkpoints.ts",
+        "line": 42
+      }
+    ]
+  },
+  "partial_scan": false,
+  "diff_sha256": "2e322b9e95f7dfd0e14604da743a320845545a4294e6a9eecd4616f90d90325b",
+  "warning": "SYNTHETIC FIXTURE ONLY; no actual patch was proposed or tested."
+}
