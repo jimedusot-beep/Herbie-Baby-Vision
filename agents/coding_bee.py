@@ -89,11 +89,10 @@ def git_read(*args, input_text=None):
 
 def validate_work():
     ensure_running()
-    expected = (HIVE / 'work').resolve() / 'trivia-lobby'
-    if WORK.is_symlink() or not WORK.is_dir() or WORK.resolve() != expected:
-        raise BeeError('Expected a local, non-symlink disposable work/trivia-lobby directory')
-    if not (WORK / '.git').is_dir() or (WORK / '.git').is_symlink():
-        raise BeeError('Expected a standalone Git clone, not a worktree or linked .git')
+    try:
+        artifact_io.verify_disposable_checkout(HIVE, WORK)
+    except artifact_io.ArtifactError as exc:
+        raise BeeError('Expected a physical standalone disposable checkout under hive/work') from exc
     actual = Path(git_read('rev-parse', '--show-toplevel').strip()).resolve()
     if actual != WORK.resolve():
         raise BeeError('Git repository root must equal work/trivia-lobby')
@@ -109,9 +108,12 @@ def safe_task(path):
     task = Path(path)
     if not task.is_absolute():
         task = HIVE / task
+    # Check links *before* resolve(): resolving first makes is_symlink() useless.
+    if artifact_io._reparse(TASKS) or artifact_io._reparse(task):
+        raise BeeError('Task directory and task file must not be redirected')
     task = task.resolve()
     if (task.parent != TASKS.resolve() or task.suffix != '.md'
-            or task.is_symlink() or not task.is_file() or task.stat().st_size > MAX_TASK_BYTES):
+            or not task.is_file() or task.stat().st_size > MAX_TASK_BYTES):
         raise BeeError('Task must be a small .md file directly inside hive/tasks')
     raw = task.read_text(encoding='utf-8')
     files, description = [], []
