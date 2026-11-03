@@ -1,0 +1,61 @@
+name: Baby Vision M1 physical checkout boundaries
+on:
+  pull_request:
+    paths:
+      - agents/artifact_io.py
+      - agents/coding_bee.py
+      - agents/readonly_investigate.py
+      - tests/test_m1_path_boundaries.py
+      - .github/workflows/m1-path-boundaries.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  complete-linux-regressions:
+    name: Full M1 suite on Linux (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.9', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install test-only dependency
+        run: python -m pip install 'cryptography>=43,<47'
+      - name: Execute all offline unit and M1 integration tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python -B -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Confirm no tracked source changed
+        shell: bash
+        run: |
+          git diff --exit-code
+          git diff --cached --exit-code
+  windows-checkout-smoke:
+    name: Windows physical checkout smoke (Python 3.12)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run checkout path regressions
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python -B -m unittest discover -s tests -p 'test_m1_path_boundaries.py' -v
+      - name: Confirm no tracked source changed
+        shell: pwsh
+        run: |
+          git diff --exit-code
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          git diff --cached --exit-code
+          if ($LASTEXITCODE -ne 0) { exit 1 }
