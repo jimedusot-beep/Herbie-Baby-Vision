@@ -19,3 +19,11 @@ The tests are exercised in Linux Python 3.9 and 3.12 full suite and in a Windows
 ## Additional Windows linked-output check
 
 The same Windows dangling-reparse behavior was identified as a potential gap in `artifact_io.write_exclusive()` for proposed patch filenames. The writer now explicitly rejects an existing/symlinked output entry **before** attempting exclusive creation. Four additional synthetic tests cover dangling links, existing links to canary files, pre-existing ordinary files, and normal exclusive writes. This does not eliminate same-user Windows filesystem races, but prevents this known preexisting-link path from overwriting or creating external files.
+
+## Read-only Git hook boundary (additional review finding)
+
+Git's repository-local `core.fsmonitor` configuration can name an executable monitor hook. Before this fix, `readonly_investigate._git('status', '--porcelain')` did not disable the hook, unlike the Coding Bee's own Git helper. A synthetic POSIX Git fixture **demonstrated external canary-script invocation** during a supposedly read-only status check. Passing only a read-only Git subcommand is not sufficient for an untrusted repository's configuration.
+
+Now all read-only Git invocations made by the investigator, repository search (including batch reads), Coding Bee and proposal `git apply --check` explicitly use `git -c core.fsmonitor=false`. This is a *per-command override*, not a persistent repository config mutation. A synthetic actual-Git regression asserts the canary hook is not launched, and an OS-independent argument-contract test covers all five call sites (including hosted Windows).
+
+**Remaining limitations:** this is one specific Git configuration execution vector, not proof that all Git config/environment/hook interactions are safe. Restrict untrusted repositories to a separately isolated process with minimal filesystem/network permissions before granting any execution capability. Real ZBook/Windows host and malicious same-user races still require separate review.

@@ -49,7 +49,7 @@ def _git(repo, *args):
     """Only read Git metadata and objects; no shell or repository hooks."""
     try:
         return subprocess.run(
-            ['git', '-C', str(repo), *args], stdout=subprocess.PIPE,
+            ['git', '-c', 'core.fsmonitor=false', '-C', str(repo), *args], stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, check=True, timeout=15,
         ).stdout
     except (FileNotFoundError, subprocess.TimeoutExpired, subprocess.CalledProcessError) as exc:
@@ -125,7 +125,7 @@ def _batch_read_blobs(root, selected):
     query = ''.join(oid + '\n' for _, oid, _ in selected).encode('ascii')
     try:
         result = subprocess.run(
-            ['git', '-C', str(root), 'cat-file', '--batch'], input=query,
+            ['git', '-c', 'core.fsmonitor=false', '-C', str(root), 'cat-file', '--batch'], input=query,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True,
             timeout=45,
         )

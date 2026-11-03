@@ -7,6 +7,7 @@ on:
       - agents/coding_bee.py
       - tests/test_stop_sentinel.py
       - tests/test_artifact_output_links.py
+      - tests/test_git_fsmonitor_boundary.py
       - .github/workflows/stop-sentinel.yml
   workflow_dispatch:
 permissions:
@@ -29,6 +30,7 @@ jobs:
         run: |
           python -B -m unittest discover -s tests -p 'test_stop_sentinel.py' -v
           python -B -m unittest discover -s tests -p 'test_artifact_output_links.py' -v
+          python -B -m unittest discover -s tests -p 'test_git_fsmonitor_boundary.py' -v
       - name: Confirm source unchanged
         shell: pwsh
         run: |
@@ -51,5 +53,6 @@ jobs:
         run: |
           python -B -m unittest discover -s tests -p 'test_stop_sentinel.py' -v
           python -B -m unittest discover -s tests -p 'test_artifact_output_links.py' -v
+          python -B -m unittest discover -s tests -p 'test_git_fsmonitor_boundary.py' -v
       - name: Confirm source unchanged
         run: git diff --exit-code

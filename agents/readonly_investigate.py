@@ -45,7 +45,7 @@ def stopped():
 def _git(*args):
     stopped()
     try:
-        return subprocess.run(['git', '-C', str(WORK), *args], capture_output=True,
+        return subprocess.run(['git', '-c', 'core.fsmonitor=false', '-C', str(WORK), *args], capture_output=True,
                               text=True, check=True, timeout=15).stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as exc:
         raise InvestigationError('Unable to inspect disposable Git checkout') from exc
