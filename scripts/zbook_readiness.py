@@ -113,7 +113,8 @@ def readiness(model, *, root=None, platform=None, version=None,
     for name, program in executables.items():
         checks[name] = "ok" if find_program(program) else "blocked"
     checks["model_tag"] = "blocked"
-    if not isinstance(model, str) or not MODEL_PATTERN.fullmatch(model):
+    if (not isinstance(model, str) or not MODEL_PATTERN.fullmatch(model)
+            or "://" in model):
         checks["model_tag"] = "invalid"
     elif (checks["windows"] == "ok" and checks["python_3_12"] == "ok"
           and checks["reviewed_public_sources"] == "ok"
