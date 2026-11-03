@@ -1,0 +1,24 @@
+name: Baby Vision - read-only investigator unit tests
+on:
+  pull_request:
+    paths:
+      - 'agents/readonly_investigate.py'
+      - 'tests/test_readonly_investigate.py'
+      - 'agents/repository_search.py'
+      - '.github/workflows/read-only-investigator.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run synthetic offline investigator tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          python -B -m unittest discover -s tests -p 'test_readonly_investigate.py' -v

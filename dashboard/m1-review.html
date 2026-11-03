@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'; worker-src 'none'">
+<title>Baby Vision M1 — Private Review</title>
+<style>
+:root{color-scheme:light dark;font:16px/1.48 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:Canvas;color:CanvasText}
+main{max-width:900px;margin:auto;padding:20px max(16px,env(safe-area-inset-right)) calc(26px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+h1{font-size:clamp(1.5rem,5vw,2.15rem);line-height:1.15;margin:0.4rem 0 0.75rem}
+h2{font-size:1.15rem;margin:.1rem 0 .75rem}
+p{margin:.5rem 0 1rem}.subtle,small{color:GrayText}
+section{border:1px solid color-mix(in srgb,CanvasText 22%,Canvas);border-radius:14px;padding:clamp(15px,4vw,24px);margin:16px 0}
+.meta{display:grid;grid-template-columns:minmax(7.5rem,1fr) 2fr;gap:.5rem 1rem}
+dt{color:GrayText}dd{margin:0;overflow-wrap:anywhere}
+label{display:block;font-weight:650;margin-bottom:.5rem}
+input[type=file]{width:100%;font:inherit;padding:.45rem 0}
+button{font:inherit;min-height:44px;border:1px solid color-mix(in srgb,CanvasText 34%,Canvas);background:ButtonFace;color:ButtonText;border-radius:10px;padding:10px 14px;cursor:pointer}
+button:disabled{opacity:.48;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid Highlight;outline-offset:3px}
+.actions{display:flex;gap:.6rem;flex-wrap:wrap}.state{font-weight:700}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;padding:14px;border-radius:10px;background:color-mix(in srgb,CanvasText 8%,Canvas)}
+.details p{overflow-wrap:anywhere}.details h3{font-size:.96rem;margin:1.2rem 0 .3rem}
+@media(max-width:580px){.meta{grid-template-columns:1fr}dt{margin-top:.5rem}}
+</style>
+<script src="m1-review.js" defer></script>
+</head>
+<body>
+<main>
+<header>
+<p class="subtle">H.E.R.B.I.E. · Baby Vision M1 · local-only review</p>
+<h1>Review a Coding Bee investigation</h1>
+<p>Inspect an M1 investigation report, proposal metadata and optional patch. All files remain in this browser. <strong>This viewer cannot run code, approve an action, contact Ollama, or change GitHub.</strong></p>
+</header>
+<section aria-labelledby="filesHeading">
+<h2 id="filesHeading">1. Choose private review files</h2>
+<label for="localFiles">Investigation JSON, proposal JSON, and optional .diff (up to three)</label>
+<input id="localFiles" type="file" accept=".json,.diff,application/json,text/plain" multiple>
+<p><small>File limits: 256 KiB per JSON; 12 KiB per diff. No uploads, analytics, cloud sync, remote requests or browser storage. Keep private source files off public web hosting.</small></p>
+<p class="state" role="status" aria-live="polite" id="reviewStatus">No report selected</p>
+<p id="reviewDetail">Choose local JSON files, and optionally a matching .diff.</p>
+<button id="clearAll" type="button">Clear private review</button>
+</section>
+<section aria-labelledby="metaHeading">
+<h2 id="metaHeading">2. Evidence summary</h2>
+<dl class="meta">
+<dt>Source commit claim</dt><dd id="sourceCommit">—</dd>
+<dt>Investigation question</dt><dd id="reviewQuery">—</dd>
+<dt>Model label</dt><dd id="modelTag">—</dd>
+<dt>Proposed target</dt><dd id="targetFile">—</dd>
+<dt>Search coverage</dt><dd id="coverageState">—</dd>
+<dt>Confidence</dt><dd id="confidence">—</dd>
+<dt>Cross-file consistency</dt><dd id="pairState">—</dd>
+<dt>Diff SHA-256</dt><dd id="checksumState">—</dd>
+</dl>
+<p><small>These are report claims, not authenticated source evidence or a real test result. A matching checksum detects accidental changes, not fabricated reports.</small></p>
+</section>
+<section class="details" aria-labelledby="findingsHeading">
+<h2 id="findingsHeading">3. Model's findings — not independently verified</h2>
+<h3>Summary</h3><p id="summary">—</p>
+<h3>Suspected cause</h3><p id="suspectedCause">—</p>
+<h3>Suggested change</h3><p id="suggestedChange">—</p>
+<h3>Cited source lines</h3><pre id="citationList">—</pre>
+<div class="actions"><button type="button" id="toggleSource" disabled>Show evidence excerpts</button><button type="button" id="toggleDiff" disabled>Show proposed diff</button></div>
+<pre id="sourcePreview" hidden aria-label="Private source evidence excerpts"></pre>
+<pre id="diffPreview" hidden aria-label="Private proposed patch, not applied"></pre>
+</section>
+<footer><small>Read-only prototype · No persistent approvals, trusted signatures, verified code execution or automatic merge. For use on a trusted device/browser; extensions may still access displayed content.</small></footer>
+</main>
+</body>
+</html>

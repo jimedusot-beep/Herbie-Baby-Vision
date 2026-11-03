@@ -1,0 +1,29 @@
+name: Baby Vision M1 review-only acceptance
+on:
+  pull_request:
+    paths:
+      - 'agents/proposal_bridge.py'
+      - 'tests/test_m1_acceptance.py'
+      - '.github/workflows/m1-acceptance.yml'
+      - 'docs/M1_ACCEPTANCE.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review-only:
+    name: Synthetic 411-file M1 acceptance / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install 'cryptography>=43,<47'
+      - name: All offline regressions (no Ollama, execution, merge or deployment)
+        run: python -B -m unittest discover -s tests -p 'test_*.py' -q
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
