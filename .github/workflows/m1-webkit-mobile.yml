@@ -1,0 +1,48 @@
+name: Baby Vision M1 mobile WebKit acceptance
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - dashboard/m1-review.html
+      - dashboard/m1-review.js
+      - samples/demo.*
+      - tests/test_m1_mobile_webkit.cjs
+      - .github/workflows/m1-webkit-mobile.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-mobile-webkit:
+    name: Read-only WebKit with phone-sized touch viewport
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser engine outside checkout
+        run: npm install --prefix /tmp/baby-webkit --no-save --no-audit --no-fund playwright@1.56.1
+      - name: Install WebKit browser and Linux dependencies
+        run: /tmp/baby-webkit/node_modules/.bin/playwright install --with-deps webkit
+      - name: Check browser test syntax
+        run: node --check tests/test_m1_mobile_webkit.cjs
+      - name: Run synthetic mobile viewport regression tests
+        env:
+          BABY_WEBKIT_PLAYWRIGHT: /tmp/baby-webkit/node_modules/playwright
+          NODE_OPTIONS: --unhandled-rejections=strict
+        run: node --test tests/test_m1_mobile_webkit.cjs
+      - name: Upload synthetic-only preview image
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baby-vision-m1-synthetic-webkit-preview
+          path: artifacts/m1-webkit-synthetic-mobile.png
+          if-no-files-found: error
+          retention-days: 7
+      - name: Verify tracked source unchanged
+        run: |
+          git diff --exit-code
+          git diff --cached --exit-code
