@@ -38,7 +38,7 @@ class InvestigationError(ValueError):
 
 
 def stopped():
-    if STOP.exists():
+    if artifact_io.stop_present(HIVE):
         raise InvestigationError('STOP is present; investigation disabled')
 
 

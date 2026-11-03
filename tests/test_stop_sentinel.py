@@ -122,6 +122,21 @@ class StopSentinelTests(unittest.TestCase):
         with self.assertRaises(artifact_io.ArtifactError):
             artifact_io.clear_stop(linked)
 
+    def test_dangling_stop_refuses_investigation_proposal_and_approval(self):
+        import readonly_investigate
+        import proposal_bridge
+        import approval_gate
+        old = readonly_investigate.HIVE
+        readonly_investigate.HIVE = self.hive
+        self.addCleanup(setattr, readonly_investigate, 'HIVE', old)
+        self.symlink(self.stop, self.root / 'missing-stop-target')
+        with self.assertRaises(readonly_investigate.InvestigationError):
+            readonly_investigate.stopped()
+        with self.assertRaises(proposal_bridge.ProposalError):
+            proposal_bridge.stopped()
+        with self.assertRaises(approval_gate.ApprovalError):
+            approval_gate._guard()
+
 
 if __name__ == '__main__':
     unittest.main()
