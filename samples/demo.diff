@@ -1,0 +1,5 @@
+--- a/server/room-checkpoints.ts
++++ b/server/room-checkpoints.ts
+@@ -42,1 +42,1 @@
+-const checkpoint = recoverRoom();
++const checkpoint = recoverSafely();

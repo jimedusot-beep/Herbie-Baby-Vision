@@ -1,0 +1,33 @@
+name: Baby Vision M1 mobile read-only review
+on:
+  pull_request:
+    paths:
+      - 'dashboard/m1-review.html'
+      - 'dashboard/m1-review.js'
+      - 'tests/test_m1_mobile_review.cjs'
+      - 'docs/M1_MOBILE_REVIEW.md'
+      - 'samples/demo.*'
+      - '.github/workflows/m1-mobile-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-review-tests:
+    name: Offline mobile viewer safety tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser JavaScript syntax
+        run: node --check dashboard/m1-review.js
+      - name: Run dashboard regression suite
+        run: node --test tests/test_m1_mobile_review.cjs
+      - name: Confirm test did not mutate checked-out source
+        run: |
+          git diff --exit-code
+          git diff --cached --exit-code
