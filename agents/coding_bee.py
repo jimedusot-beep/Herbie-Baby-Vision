@@ -72,8 +72,8 @@ def digest(s):
 
 
 def ensure_running():
-    if STOP.exists():
-        raise BeeError('STOP file is present; the bee is disabled')
+    if artifact_io.stop_present(HIVE):
+        raise BeeError('STOP marker is present; the bee is disabled')
 
 
 def git_read(*args, input_text=None):
@@ -321,15 +321,16 @@ def cmd_propose(args):
 
 
 def cmd_stop(_):
-    STOP.write_text('disabled\n', encoding='utf-8')
+    created = artifact_io.set_stop(HIVE)
     audit('stopped')
-    print('STOP created; inspect and propose refuse to run until resumed manually.')
+    print('STOP created.' if created else 'STOP already active.')
+    print('Inspect and propose refuse to run until resumed manually.')
 
 
 def cmd_resume(_):
-    STOP.unlink(missing_ok=True)
+    removed = artifact_io.clear_stop(HIVE)
     audit('resumed')
-    print('STOP removed.')
+    print('STOP removed.' if removed else 'STOP was already absent.')
 
 
 def main(argv=None):

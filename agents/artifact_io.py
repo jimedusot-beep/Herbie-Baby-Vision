@@ -58,6 +58,86 @@ def verify_disposable_checkout(root, checkout):
         raise ArtifactError('Could not verify disposable checkout directories') from exc
     return checkout
 
+
+@contextmanager
+def _stop_parent(root):
+    """Verify the hive root and hold a physical root directory FD on POSIX."""
+    root = Path(root)
+    if _reparse(root) or not root.is_dir():
+        raise ArtifactError('Unsafe STOP marker parent')
+    dfd = None
+    try:
+        if os.name != 'nt' and os.open in os.supports_dir_fd:
+            flags = os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) | getattr(os, 'O_NOFOLLOW', 0)
+            dfd = os.open(root, flags)
+            if not stat.S_ISDIR(os.fstat(dfd).st_mode):
+                raise ArtifactError('Unsafe STOP marker parent')
+        yield root, dfd
+    except OSError as exc:
+        raise ArtifactError('Could not safely access STOP marker') from exc
+    finally:
+        if dfd is not None:
+            os.close(dfd)
+
+
+def _stop_lstat(root, dfd):
+    try:
+        if dfd is not None:
+            return os.stat('STOP', dir_fd=dfd, follow_symlinks=False)
+        return (root / 'STOP').lstat()
+    except FileNotFoundError:
+        return None
+
+
+def _stop_regular(root, info):
+    return (info is not None and stat.S_ISREG(info.st_mode)
+            and info.st_nlink == 1 and not _reparse(root / 'STOP'))
+
+
+def stop_present(root):
+    """Any STOP entry, even a dangling symlink, disables work (fail closed)."""
+    with _stop_parent(root) as (path, dfd):
+        return _stop_lstat(path, dfd) is not None
+
+
+def set_stop(root):
+    """Create a STOP marker exclusively, never following or overwriting links.
+
+    An existing *regular, singly-linked* marker is already active. Reject
+    redirected markers and other filesystem types. No owner file is overwritten.
+    """
+    with _stop_parent(root) as (path, dfd):
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
+        try:
+            if dfd is not None:
+                fd = os.open('STOP', flags, 0o600, dir_fd=dfd)
+            else:
+                fd = os.open(path / 'STOP', flags, 0o600)
+        except FileExistsError:
+            if not _stop_regular(path, _stop_lstat(path, dfd)):
+                raise ArtifactError('Refusing redirected or nonregular STOP marker')
+            return False
+        _write_all(fd, b'disabled\n')
+        return True
+
+
+def clear_stop(root):
+    """Remove only a regular standalone STOP filename, without following links."""
+    with _stop_parent(root) as (path, dfd):
+        info = _stop_lstat(path, dfd)
+        if info is None:
+            return False
+        if not _stop_regular(path, info):
+            raise ArtifactError('Refusing redirected or nonregular STOP marker')
+        try:
+            if dfd is not None:
+                os.unlink('STOP', dir_fd=dfd)
+            else:
+                (path / 'STOP').unlink()
+        except FileNotFoundError:
+            return False
+        return True
+
 def _location(root, label):
     root = Path(root)
     if label not in SAFE_LABELS or not root.is_dir() or _reparse(root):
