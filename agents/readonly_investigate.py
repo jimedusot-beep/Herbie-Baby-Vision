@@ -53,11 +53,11 @@ def _git(*args):
 
 def check_work():
     stopped()
-    expected = (HIVE / 'work' / 'trivia-lobby').resolve()
-    if (WORK.is_symlink() or WORK.resolve() != expected or not WORK.is_dir()
-            or not (WORK / '.git').is_dir() or (WORK / '.git').is_symlink()):
-        raise InvestigationError('Only a standalone disposable work/trivia-lobby clone is allowed')
-    if Path(_git('rev-parse', '--show-toplevel')).resolve() != expected:
+    try:
+        artifact_io.verify_disposable_checkout(HIVE, WORK)
+    except artifact_io.ArtifactError as exc:
+        raise InvestigationError('Only a physical standalone disposable checkout is allowed') from exc
+    if Path(_git('rev-parse', '--show-toplevel')).resolve() != WORK.resolve():
         raise InvestigationError('Unexpected Git root')
     if not re.fullmatch(r'bee/[a-zA-Z0-9][a-zA-Z0-9._/-]{0,80}', _git('branch', '--show-current')):
         raise InvestigationError('An isolated bee/* branch is required')

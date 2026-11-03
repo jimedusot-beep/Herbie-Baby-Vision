@@ -32,6 +32,32 @@ def _reparse(path):
     return False
 
 
+
+def verify_disposable_checkout(root, checkout):
+    """Reject redirected work/, checkout and .git paths before reading Git.
+
+    The checkout must be a *physical directory* at hive/work/trivia-lobby,
+    rather than a symlink or Windows junction to another repository.
+    This is a safety precondition, not a sandbox or proof of ownership.
+    """
+    root = Path(root)
+    checkout = Path(checkout)
+    work = root / 'work'
+    git_dir = checkout / '.git'
+    if checkout != work / 'trivia-lobby':
+        raise ArtifactError('Unexpected disposable checkout location')
+    try:
+        if any(_reparse(p) or not p.is_dir() for p in (root, work, checkout, git_dir)):
+            raise ArtifactError('Missing or redirected disposable checkout directory')
+        canonical_root = root.resolve(strict=True)
+        if (work.resolve(strict=True) != canonical_root / 'work' or
+                checkout.resolve(strict=True) != canonical_root / 'work' / 'trivia-lobby' or
+                git_dir.resolve(strict=True) != canonical_root / 'work' / 'trivia-lobby' / '.git'):
+            raise ArtifactError('Disposable checkout resolves outside the hive')
+    except OSError as exc:
+        raise ArtifactError('Could not verify disposable checkout directories') from exc
+    return checkout
+
 def _location(root, label):
     root = Path(root)
     if label not in SAFE_LABELS or not root.is_dir() or _reparse(root):
