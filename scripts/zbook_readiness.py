@@ -19,7 +19,7 @@ EXPECTED_BLOBS = {
     "agents/herbie_gateway_client.py": "96056a3aed2328f4a55b1030788672de61c04235",
     "agents/first_task.py": "b2447db692cd45076b3801c36192deb688972397",
     "agents/gateway_first_task.py": "dec81b7786517c37d84a3cdbda0990f653716944",
-    "integration/live_ollama_smoke.py": "7c5c30850a0244ade69021f2b2d9d78bab58da13",
+    "integration/live_ollama_smoke.py": "616abf674864dd884a7715b973f5cd61beb60275",
 }
 
 
