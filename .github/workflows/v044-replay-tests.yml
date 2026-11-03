@@ -1,0 +1,31 @@
+name: Baby Vision V0.4.4 - signed approval replay (non-executing)
+on:
+  pull_request:
+    paths:
+      - 'agents/approval_replay.py'
+      - 'agents/signed_approval.py'
+      - 'tests/test_replay_v044.py'
+      - 'docs/REPLAY_LEDGER_V044.md'
+      - '.github/workflows/v044-replay-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review-only-tests:
+    name: Verify reservation regression - Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.9', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install cryptographic verification dependency
+        run: python -m pip install 'cryptography>=43,<47'
+      - name: Run synthetic tests without any execution capability
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python -B -m unittest discover -s tests -p 'test_*.py' -q
