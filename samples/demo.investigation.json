@@ -1,0 +1,26 @@
+{
+  "source_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "query": "room checkpoint recovery",
+  "partial_scan": false,
+  "searched_files": 547,
+  "evidence": [
+    {
+      "path": "server/room-checkpoints.ts",
+      "line": 42,
+      "excerpt": "const checkpoint = recoverRoom(); // SYNTHETIC EXAMPLE ONLY"
+    }
+  ],
+  "analysis": {
+    "summary": "Synthetic example only: reconnect may need a state guard.",
+    "suspected_cause": "Synthetic fixture: checkpoint may be reused after a stale session.",
+    "suggested_change": "Synthetic fixture: consider checking the reconnect session before restoring.",
+    "confidence": "medium",
+    "citations": [
+      {
+        "path": "server/room-checkpoints.ts",
+        "line": 42
+      }
+    ]
+  },
+  "warning": "SIMULATED DEMO. This does not describe a real Trivia Lobby bug."
+}
