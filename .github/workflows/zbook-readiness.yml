@@ -26,8 +26,7 @@ jobs:
       - name: CLI rejects invalid model without inference or cloning
         shell: pwsh
         run: |
-          python -B scripts/zbook_readiness.py --model "invalid model"
-          if ($LASTEXITCODE -ne 2) { exit 1 }
+          python -c 'import json, subprocess, sys; p = subprocess.run([sys.executable, "-B", "scripts/zbook_readiness.py", "--model", "invalid model"], capture_output=True, text=True, timeout=10); assert p.returncode == 2; assert json.loads(p.stdout)["status"] == "blocked"; print("Expected blocked preflight verified")'
   linux:
     runs-on: ubuntu-latest
     timeout-minutes: 8
