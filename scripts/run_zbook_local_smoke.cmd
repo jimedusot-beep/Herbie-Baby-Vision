@@ -87,6 +87,14 @@ if /I not "%GATEWAY_SHA%"=="eef2eebc43fc7aaec67ebd3cc652ee3b0dd7d9c4" (
 )
 
 echo.
+echo Checking ZBook readiness without running the model...
+py -3.12 "%WORK%\BabyVision\scripts\zbook_readiness.py" --model gemma3:1b
+if errorlevel 1 (
+  echo BLOCKED: Read-only readiness check failed. No AI model was run.
+  goto :blocked
+)
+
+echo.
 echo Checking installed local Ollama models...
 ollama list
 if errorlevel 1 (
