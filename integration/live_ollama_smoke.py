@@ -33,6 +33,9 @@ MAX_TAGS_BYTES = 262_144
 # Reviewed Git blob SHA of Herbie PR #93's worker_gateway.py.
 # Re-review and update this pin whenever the gateway module changes.
 REVIEWED_GATEWAY_GIT_BLOB_SHA = "eef2eebc43fc7aaec67ebd3cc652ee3b0dd7d9c4"
+# Second reviewed gateway revision: release the inference slot before sending a reply.
+# Both hashes are exact byte approvals; never accept a wildcard or arbitrary path.
+REVIEWED_GATEWAY_GIT_BLOB_SHA_RETRY_ORDER = "570a7d3077675e34ecae36f0abcdc76a7a5df7cb"
 TEST_PROMPT = "In one short sentence, explain what a Python unit test checks."
 
 
@@ -58,7 +61,7 @@ def load_gateway_module(path):
         raise SmokeBlocked("reviewed_gateway_source_unavailable")
     source = path.read_bytes()
     git_blob = reviewed_git_blob_sha(source)
-    if git_blob != REVIEWED_GATEWAY_GIT_BLOB_SHA:
+    if git_blob not in (REVIEWED_GATEWAY_GIT_BLOB_SHA, REVIEWED_GATEWAY_GIT_BLOB_SHA_RETRY_ORDER):
         raise SmokeBlocked("gateway_source_revision_unreviewed")
     # Execute the EXACT bytes checked above. Importing by pathname instead
     # could read a modified file or use a stale .pyc after the hash check.
