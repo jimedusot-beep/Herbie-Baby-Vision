@@ -231,7 +231,20 @@ def write_exclusive(root, label, name, body):
                 fd = os.open(name, flags, 0o600, dir_fd=dfd)
             else:
                 _location(root, label)
-                fd = os.open(path / name, flags, 0o600)
+                # Windows can treat O_CREAT|O_EXCL differently for dangling
+                # symlinks: do not rely on those flags to reject a reparse
+                # point. Explicitly refuse ANY preexisting directory entry
+                # before attempting exclusive creation.
+                target = path / name
+                if _reparse(target):
+                    raise ArtifactError('Refusing redirected artifact filename')
+                try:
+                    target.lstat()
+                except FileNotFoundError:
+                    pass
+                else:
+                    raise ArtifactError('Artifact filename already exists')
+                fd = os.open(target, flags, 0o600)
             _write_all(fd, body)
             fd = None
         except FileExistsError as exc:

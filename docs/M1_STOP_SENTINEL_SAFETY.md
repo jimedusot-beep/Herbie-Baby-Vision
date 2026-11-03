@@ -15,3 +15,7 @@ This draft fixes the STOP marker lifecycle without adding execution authority:
 No model inference, source patch application, git merge, deployment, or live ZBook access occurs in this PR. Do not call this fix production-ready based solely on CI.
 
 The tests are exercised in Linux Python 3.9 and 3.12 full suite and in a Windows GitHub-hosted Python 3.12 run. Physical iPhone Safari and local ZBook acceptance are unrelated to this fix.
+
+## Additional Windows linked-output check
+
+The same Windows dangling-reparse behavior was identified as a potential gap in `artifact_io.write_exclusive()` for proposed patch filenames. The writer now explicitly rejects an existing/symlinked output entry **before** attempting exclusive creation. Four additional synthetic tests cover dangling links, existing links to canary files, pre-existing ordinary files, and normal exclusive writes. This does not eliminate same-user Windows filesystem races, but prevents this known preexisting-link path from overwriting or creating external files.
