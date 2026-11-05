@@ -32,3 +32,11 @@ These checks use synthetic fixtures and do not require Ollama, a microphone or r
 - [3D-vision — CAD and assembly workshop](https://github.com/jimedusot-beep/3D-vision).
 
 See [integration plan](docs/INTEGRATION_PLAN.md) and [safety policy](docs/SAFETY.md). Keep private source, captures and review packets outside this public repository.
+
+## License and third-party content
+
+Original project software and its accompanying software documentation are licensed under **MIT**; see [LICENSE](LICENSE). Copyright 2026 jimedusot-beep. This notice covers only material the project authors have authority to license. Existing file-specific notices, third-party terms and prior license grants remain in effect.
+
+Imported source, model weights, generated proposals containing third-party material, and review packets are not relicensed by this notice. Keep source-specific notices with any reused material.
+
+CAD files, models, datasets, images, audio, fonts and other non-software assets are not granted a new license by this software notice. Use their existing asset-specific terms. Where provenance or permission is unresolved, this notice does not supply redistribution permission; record the source, author, exact license and modifications before redistributing that material.
