@@ -123,7 +123,7 @@ def validate_patch(patch, target):
         raise ProposalError('Patch makes no changes')
     stopped()
     try:
-        subprocess.run(['git', '-C', str(investigation.WORK), 'apply', '--check',
+        subprocess.run(['git', '-c', 'core.fsmonitor=false', '-C', str(investigation.WORK), 'apply', '--check',
                         '--whitespace=error', '-'], input=patch, text=True,
                        capture_output=True, timeout=15, check=True)
     except (OSError, subprocess.TimeoutExpired, subprocess.CalledProcessError) as exc:

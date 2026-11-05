@@ -1,0 +1,58 @@
+name: Baby Vision STOP marker safety across platforms
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - agents/artifact_io.py
+      - agents/coding_bee.py
+      - tests/test_stop_sentinel.py
+      - tests/test_artifact_output_links.py
+      - tests/test_git_fsmonitor_boundary.py
+      - .github/workflows/stop-sentinel.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stop-sentinel-windows:
+    name: Windows STOP marker checks
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute STOP marker and artifact output link tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          python -B -m unittest discover -s tests -p 'test_stop_sentinel.py' -v
+          python -B -m unittest discover -s tests -p 'test_artifact_output_links.py' -v
+          python -B -m unittest discover -s tests -p 'test_git_fsmonitor_boundary.py' -v
+      - name: Confirm source unchanged
+        shell: pwsh
+        run: |
+          git diff --exit-code
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+  stop-sentinel-linux:
+    name: Linux STOP marker checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute STOP marker and artifact output link tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          python -B -m unittest discover -s tests -p 'test_stop_sentinel.py' -v
+          python -B -m unittest discover -s tests -p 'test_artifact_output_links.py' -v
+          python -B -m unittest discover -s tests -p 'test_git_fsmonitor_boundary.py' -v
+      - name: Confirm source unchanged
+        run: git diff --exit-code
