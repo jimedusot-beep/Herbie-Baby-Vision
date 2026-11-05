@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'agents'))
 import artifact_io
@@ -111,6 +112,28 @@ class StopSentinelTests(unittest.TestCase):
         self.assertFalse(artifact_io.set_stop(self.hive))
         self.assertEqual(self.stop.read_text(), 'EXISTING_OPERATOR_STOP_MARKER')
         self.assertTrue(artifact_io.clear_stop(self.hive))
+
+    def test_symlink_above_hive_is_rejected(self):
+        parent_link = self.root / 'alias'
+        try:
+            parent_link.symlink_to(self.root, target_is_directory=True)
+        except (OSError, NotImplementedError) as exc:
+            self.skipTest(str(exc))
+        with self.assertRaises(artifact_io.ArtifactError):
+            artifact_io.set_stop(parent_link / 'hive')
+        self.assertFalse(self.stop.exists())
+
+    def test_link_created_between_lookup_and_create_is_rejected(self):
+        original = artifact_io._stop_lstat
+        def swap_after_lookup(root, dfd):
+            result = original(root, dfd)
+            if result is None:
+                self.symlink(self.stop, self.canary)
+            return result
+        with mock.patch.object(artifact_io, '_stop_lstat', swap_after_lookup):
+            with self.assertRaises(artifact_io.ArtifactError):
+                artifact_io.set_stop(self.hive)
+        self.assertEqual(self.canary.read_text(), 'ORIGINAL_OWNER_CONTENT')
 
     def test_redirected_hive_root_fails_closed(self):
         linked = self.root / 'hive-redirect'

@@ -63,13 +63,20 @@ def verify_disposable_checkout(root, checkout):
 def _stop_parent(root):
     """Verify the hive root and hold a physical root directory FD on POSIX."""
     root = Path(root)
-    if _reparse(root) or not root.is_dir():
+    if any(_reparse(parent) for parent in root.absolute().parents) or _reparse(root) or not root.is_dir():
         raise ArtifactError('Unsafe STOP marker parent')
     dfd = None
     try:
         if os.name != 'nt' and os.open in os.supports_dir_fd:
             flags = os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) | getattr(os, 'O_NOFOLLOW', 0)
-            dfd = os.open(root, flags)
+            absolute = root.absolute()
+            dfd = os.open(absolute.anchor, flags)
+            for component in absolute.parts[1:]:
+                if component == '..':
+                    raise ArtifactError('Unsafe STOP marker parent')
+                child = os.open(component, flags, dir_fd=dfd)
+                os.close(dfd)
+                dfd = child
             if not stat.S_ISDIR(os.fstat(dfd).st_mode):
                 raise ArtifactError('Unsafe STOP marker parent')
         yield root, dfd
