@@ -16,6 +16,18 @@ import urllib.request
 from urllib.parse import urlsplit
 
 
+class TaskCancelled(RuntimeError):
+    """Local STOP discarded pending work; does not kill a running subprocess."""
+
+
+def require_active(cancel_event):
+    if cancel_event is not None:
+        if not callable(getattr(cancel_event, 'is_set', None)):
+            raise TypeError('cancel_event must provide is_set()')
+        if cancel_event.is_set():
+            raise TaskCancelled('Worker task cancelled by caller')
+
+
 SCRIPT = 'npm run test:unit'
 UNIT_SCRIPT = 'node --test tests/*.test.cjs'
 
@@ -102,33 +114,42 @@ def git(repo, *arguments):
                           text=True, capture_output=True, timeout=20).stdout.strip()
 
 
-def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeout=90, proposer=None):
+def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeout=90, proposer=None,
+             cancel_event=None):
+    require_active(cancel_event)
     repo = Path(repo).resolve()
     commit = git(repo, 'rev-parse', '--verify', '--end-of-options', base + '^{commit}')
     with tempfile.TemporaryDirectory(prefix='baby-vision-task-') as directory:
         checkout = Path(directory) / 'checkout'
         git(repo, 'worktree', 'add', '--detach', str(checkout), commit)
         try:
+            require_active(cancel_event)
             package_file = checkout / 'package.json'
             if package_file.is_symlink() or not package_file.is_file():
                 raise ValueError('A regular package.json is required')
             before = json.loads(package_file.read_text())
             # Validate eligibility before spending time on model generation.
             patched_package(before, {'script': SCRIPT, 'reason': 'Eligibility check'})
+            require_active(cancel_event)
             baseline = subprocess.run([npm_executable(), 'test'], cwd=checkout,
                 capture_output=True, text=True, timeout=90)
+            require_active(cancel_event)
             if baseline.returncode == 0:
                 raise ValueError('npm test already succeeds; choose a task that is actually needed')
             proposal = (proposer or propose)(model, base_url, timeout)
+            require_active(cancel_event)
             after = patched_package(before, proposal)
+            require_active(cancel_event)
             package_file.write_text(json.dumps(after, indent=2) + '\n')
             git(checkout, 'diff', '--check')
             if git(checkout, 'diff', '--name-only') != 'package.json':
                 raise ValueError('Change escaped the approved package.json scope')
             # The command is coordinator-owned and fixed, never supplied by the model.
             # This runs trusted project tests; a disposable checkout is not an OS sandbox.
+            require_active(cancel_event)
             result = subprocess.run([npm_executable(), 'test'], cwd=checkout,
                 capture_output=True, text=True, timeout=90)
+            require_active(cancel_event)
             evidence = review_result(proposal, returncode=result.returncode,
                 output=(result.stdout + result.stderr)[-200000:], patch=git(checkout, 'diff', '--', 'package.json'))
             evidence.update({'task': 'add-npm-test-entry-point', 'model': model,

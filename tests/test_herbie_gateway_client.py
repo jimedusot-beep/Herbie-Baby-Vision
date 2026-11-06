@@ -174,5 +174,80 @@ class GatewayClientTests(unittest.TestCase):
                     client.health()
 
 
+    def test_local_stop_before_infer_never_sends_a_request(self):
+        from threading import Event
+        def responder(handler, incoming):
+            self.respond(handler, {'error': 'unexpected'}, status=500)
+        url, seen = self.server(responder)
+        stop = Event()
+        stop.set()
+        client = gateway.HerbieGatewayClient(url, TOKEN, MODEL)
+        with self.assertRaises(gateway.GatewayCancelled):
+            client.infer('coding', 'Do not send', str(uuid4()), cancel_event=stop)
+        self.assertEqual(seen, [])
+
+    def test_stop_during_slow_infer_discards_late_success(self):
+        from threading import Event
+        entered, release, stop = Event(), Event(), Event()
+        errors = []
+        def responder(handler, incoming):
+            entered.set()
+            self.assertTrue(release.wait(4))
+            self.respond(handler, {'schema_version': 1, 'request_id': incoming['request_id'],
+                'model': incoming['model'], 'reply': 'PRIVATE_STALE_RESULT'})
+        url, seen = self.server(responder)
+        client = gateway.HerbieGatewayClient(url, TOKEN, MODEL, timeout=5)
+        def task():
+            try:
+                client.infer('review', 'Slow fixture', str(uuid4()), cancel_event=stop)
+            except gateway.GatewayCancelled as exc:
+                errors.append(type(exc).__name__)
+        worker = threading.Thread(target=task)
+        worker.start()
+        try:
+            self.assertTrue(entered.wait(2))
+            stop.set()
+        finally:
+            release.set()
+            worker.join(6)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(errors, ['GatewayCancelled'])
+        self.assertEqual(len(seen), 1)
+
+    def test_cancel_uses_auth_and_requires_explicit_not_stopped_flag(self):
+        def responder(handler, incoming):
+            self.assertEqual(handler.path, '/v1/worker/cancel')
+            self.assertEqual(incoming['schema_version'], 1)
+            self.assertEqual(handler.headers['Authorization'], 'Bearer ' + TOKEN)
+            self.respond(handler, {'schema_version': 1,
+                'request_id': incoming['request_id'],
+                'status': 'cancellation_recorded', 'inference_stopped': False})
+        url, seen = self.server(responder)
+        client = gateway.HerbieGatewayClient(url, TOKEN, MODEL)
+        self.assertEqual(client.cancel(str(uuid4())), 'cancellation_recorded')
+        self.assertEqual(len(seen), 1)
+
+    def test_cancel_unknown_or_falsely_stopped_response_fails_closed(self):
+        def responder(handler, incoming):
+            self.respond(handler, {'schema_version': 1,
+                'request_id': incoming['request_id'],
+                'status': 'cancellation_recorded', 'inference_stopped': True})
+        url, _ = self.server(responder)
+        client = gateway.HerbieGatewayClient(url, TOKEN, MODEL)
+        with self.assertRaises(gateway.GatewayError):
+            client.cancel(str(uuid4()))
+        with self.assertRaises(ValueError):
+            client.cancel('untrusted-id')
+
+    def test_cancel_not_supported_by_server_fails_closed(self):
+        def responder(handler, incoming):
+            self.respond(handler, {'error': 'not found'}, status=404)
+        url, seen = self.server(responder)
+        client = gateway.HerbieGatewayClient(url, TOKEN, MODEL)
+        with self.assertRaises(gateway.GatewayError):
+            client.cancel(str(uuid4()))
+        self.assertEqual(len(seen), 1)
+
+
 if __name__ == '__main__':
     unittest.main()

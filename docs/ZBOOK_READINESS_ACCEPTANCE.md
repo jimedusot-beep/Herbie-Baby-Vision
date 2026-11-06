@@ -38,3 +38,31 @@ The historical `agents/first_task.py` and `agents/gateway_first_task.py` **comma
 This audit branch repins source integrity SHA-1 Git blobs and retains the review launcher target `codex/v02d-real-ollama-local-smoke` so it is suitable for PR #5 integration after review. The changed first-task source pins are updated for this review branch; source pins must be checked again if source code changes. Run full exact-head tests and Windows smoke acceptance before any rollout. Do not combine this with deployment or merge.
 
 **Not fixed:** process-restart duplicate request IDs, cancellation of in-flight Ollama calls, stale responses after client disconnect, and OS isolation of trusted repository test scripts. These remain release blockers for any general-purpose or remote Worker Bee. No Tailscale/mobile/hardware acceptance is implied.
+
+## 2026-11-06 Step 1 review: logical STOP, not hard model termination
+
+A **separate, unmerged** Baby Vision review branch adds `HerbieGatewayClient.cancel(request_id)` and an optional `cancel_event` for `infer()`. On a local STOP, the client refuses a new request or discards a response received after the STOP signal. The bounded worker can receive a caller-supplied `request_id` and `cancel_event`; it now checks the STOP state between trusted workflow stages and refuses to create a review-ready packet after cancellation.
+
+The matching **private**, separately reviewed gateway candidate adds authenticated `POST /v1/worker/cancel` with body `{"schema_version":1,"request_id":"canonical-uuid"}`. For an accepted running ID it records `status: cancellation_recorded`; for already completed work it returns `status: already_finished`. Both replies explicitly include `inference_stopped: false`. The gateway refuses to publish a successfully completed reply if logical cancellation was recorded while the request was active. Invalid IDs and credentials fail closed. Only exact reviewed source Git blobs are eligible for opt-in local source loading.
+
+**Critical limits:** The cancellation endpoint does **not** interrupt the underlying Ollama HTTP request, kill a running npm subprocess, free the single-inference slot early, persist a cancellation across server restart, or provide a motor emergency stop. A STOP event is a caller-controlled signal; a consumer must set it and use the same request UUID when separately calling `cancel()`. The older pinned H.E.R.B.I.E. #93 gateway does **not** expose the new endpoint; calling `cancel()` against it fails closed. Existing read-only and real-Ollama smoke remains pinned to the original private gateway unless the separate reviewed cancel candidate is explicitly chosen. DO NOT enable remote listeners, automation, or untrusted repository execution based on these tests.
+
+Acceptance before integrating these two branches: review the new private gateway source against its pinned hash, run its local synthetic gateway tests, pass all public client/worker regression and source-pin checks, then reconcile both PRs without publishing any private H.E.R.B.I.E. code to the public repository. Full process interruption and reliable restart behavior remain separate work.
+
+### Cross-repository cancellation acceptance (review-only)
+
+The separate `integration/test_cross_repo_gateway.py` suite now includes
+`test_cancel_with_real_client_and_fake_ollama_suppresses_stale_reply`.
+It drives the **real Baby Vision HTTP client** through the **exact pinned
+private logical-STOP gateway source** into a slow **synthetic** Ollama server.
+It verifies that incorrect credentials cannot cancel, a valid cancellation
+is acknowledged, the late reply is discarded, and replay with the old request
+ID is rejected. This test is **not** part of the public CI because private
+H.E.R.B.I.E. code must not be uploaded to a public runner.
+
+Run it only with both reviewed source checkouts and
+`HERBIE_WORKER_GATEWAY_PY` set to the private
+`socratic-agent/socratic_agent/worker_gateway.py` file. No actual model,
+remote service, or hardware is needed. A green result confirms this
+synthetic cross-repository protocol path, **not** a hard computation stop,
+subprocess termination, durable restart cancellation or deployment safety.

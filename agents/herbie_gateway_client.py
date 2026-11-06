@@ -22,6 +22,22 @@ class GatewayError(RuntimeError):
     """A sanitized failure; never includes credentials or response bodies."""
 
 
+class GatewayCancelled(GatewayError):
+    """Caller discarded this result; does not imply model computation stopped."""
+
+
+def _validate_request_id(request_id):
+    try:
+        if not isinstance(request_id, str) or str(UUID(request_id)) != request_id:
+            raise ValueError()
+    except ValueError:
+        raise ValueError('request_id must be a canonical UUID') from None
+
+
+def _cancelled(cancel_event):
+    return cancel_event is not None and cancel_event.is_set()
+
+
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -101,21 +117,23 @@ class HerbieGatewayClient:
             raise GatewayError('Invalid H.E.R.B.I.E. health response')
         return True
 
-    def infer(self, task_type, prompt, request_id):
-        """Send one inference request, without automatic retries or side effects.
+    def infer(self, task_type, prompt, request_id, *, cancel_event=None):
+        """One inference, no retries. A local STOP discards late results.
 
-        A retrying coordinator must reuse the same request_id and check the job
-        state before any subsequent work. This client never executes code.
+        cancel_event must be a threading.Event-style object. It does not
+        interrupt an already-blocked socket or stop the Ollama computation.
+        A coordinator should also call cancel(request_id) on STOP and must
+        never act on a response after its own session is cancelled.
         """
         if task_type not in TASK_TYPES:
             raise ValueError('Unapproved worker task type')
         if not isinstance(prompt, str) or not prompt.strip() or len(prompt.encode('utf-8')) > MAX_PROMPT_BYTES:
             raise ValueError('Prompt is empty or exceeds the size limit')
-        try:
-            if not isinstance(request_id, str) or str(UUID(request_id)) != request_id:
-                raise ValueError()
-        except ValueError:
-            raise ValueError('request_id must be a canonical UUID') from None
+        _validate_request_id(request_id)
+        if cancel_event is not None and not callable(getattr(cancel_event, 'is_set', None)):
+            raise TypeError('cancel_event must provide is_set()')
+        if _cancelled(cancel_event):
+            raise GatewayCancelled('H.E.R.B.I.E. request cancelled by caller')
         payload = json.dumps({'schema_version': 1, 'request_id': request_id,
                               'task_type': task_type, 'model': self.model,
                               'prompt': prompt}, separators=(',', ':')).encode('utf-8')
@@ -129,7 +147,11 @@ class HerbieGatewayClient:
             with opener.open(req, timeout=self.timeout) as response:
                 raw = response.read(MAX_RESPONSE_BYTES + 1)
         except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError):
+            if _cancelled(cancel_event):
+                raise GatewayCancelled('H.E.R.B.I.E. request cancelled by caller') from None
             raise GatewayError('H.E.R.B.I.E. gateway unavailable or rejected request') from None
+        if _cancelled(cancel_event):
+            raise GatewayCancelled('H.E.R.B.I.E. request cancelled by caller')
         if len(raw) > MAX_RESPONSE_BYTES:
             raise GatewayError('H.E.R.B.I.E. gateway response exceeds size limit')
         try:
@@ -149,4 +171,42 @@ class HerbieGatewayClient:
             raise GatewayError('Invalid H.E.R.B.I.E. gateway response contract') from None
         if reply_bytes > MAX_REPLY_UTF8_BYTES:
             raise GatewayError('Invalid H.E.R.B.I.E. gateway response contract')
+        if _cancelled(cancel_event):
+            raise GatewayCancelled('H.E.R.B.I.E. request cancelled by caller')
         return body['reply']
+
+    def cancel(self, request_id):
+        """Request a logical stop for an accepted ID; never claim Ollama stopped.
+
+        The separate reviewed gateway version must support this endpoint.
+        A returned 'already_finished' is NOT a guarantee the caller has not
+        received its reply; callers still invalidate their local generation.
+        """
+        _validate_request_id(request_id)
+        payload = json.dumps({'schema_version': 1, 'request_id': request_id},
+                             separators=(',', ':')).encode('utf-8')
+        req = urllib.request.Request(self.base_url + '/v1/worker/cancel',
+                data=payload, method='POST', headers={
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + self._token})
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+        try:
+            with opener.open(req, timeout=self.timeout) as response:
+                raw = response.read(1025)
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError):
+            raise GatewayError('H.E.R.B.I.E. cancellation unavailable or rejected') from None
+        if len(raw) > 1024:
+            raise GatewayError('Invalid H.E.R.B.I.E. cancellation response')
+        try:
+            body = json.loads(raw.decode('utf-8'))
+        except (ValueError, UnicodeError):
+            raise GatewayError('Invalid H.E.R.B.I.E. cancellation response') from None
+        if (not isinstance(body, dict)
+                or set(body) != {'schema_version', 'request_id', 'status', 'inference_stopped'}
+                or type(body['schema_version']) is not int or body['schema_version'] != 1
+                or body['request_id'] != request_id
+                or body['status'] not in ('cancellation_recorded', 'already_finished')
+                or body['inference_stopped'] is not False):
+            raise GatewayError('Invalid H.E.R.B.I.E. cancellation response contract')
+        return body['status']

@@ -43,11 +43,12 @@ def require_local_gateway(url):
     return base
 
 
-def propose_via_gateway(model, base_url, timeout, token):
+def propose_via_gateway(model, base_url, timeout, token, *, request_id=None, cancel_event=None):
     """Get data, never a command. A malformed response blocks the task."""
     base = require_local_gateway(base_url)
     client = HerbieGatewayClient(base, token, model, timeout=timeout)
-    reply = client.infer('npm_test_alias_v1', TASK_PROMPT, str(uuid4()))
+    reply = client.infer('npm_test_alias_v1', TASK_PROMPT,
+                         request_id or str(uuid4()), cancel_event=cancel_event)
     try:
         parsed = json.loads(reply)
     except (ValueError, TypeError, UnicodeError):
@@ -58,14 +59,21 @@ def propose_via_gateway(model, base_url, timeout, token):
         raise ModelProposalRejected('model_proposal_unapproved') from None
 
 
-def run_gateway_task(repo, model, gateway_url, token, *, base='HEAD'):
-    """Reuse the existing allowlisted edit, trusted tests and review packet."""
+def run_gateway_task(repo, model, gateway_url, token, *, base='HEAD',
+                     request_id=None, cancel_event=None):
+    """Reuse the bounded task; callers can supply an ID and local STOP signal.
+
+    Caller must set cancel_event and separately invoke client.cancel(request_id)
+    to record logical cancellation at the gateway. This cannot abort npm already
+    running on the host; no sandbox or OS process termination is implied.
+    """
     url = require_local_gateway(gateway_url)
     # The gateway's upstream socket timeout is 45s; allow for proxy overhead.
     def proposer(current_model, current_url, timeout):
-        return propose_via_gateway(current_model, current_url, timeout, token)
+        return propose_via_gateway(current_model, current_url, timeout, token,
+                                   request_id=request_id, cancel_event=cancel_event)
     evidence = run_task(repo, model, base_url=url, base=base, timeout=60,
-                        proposer=proposer)
+                        proposer=proposer, cancel_event=cancel_event)
     evidence['proposal_transport'] = 'authenticated_herbie_gateway'
     evidence['remote_devices_tested'] = False
     evidence['merge_allowed'] = False

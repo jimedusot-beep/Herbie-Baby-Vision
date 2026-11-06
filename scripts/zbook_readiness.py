@@ -16,10 +16,10 @@ import urllib.request
 MODEL_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:/-]{0,99}\Z")
 MAX_TAG_BYTES = 262144
 EXPECTED_BLOBS = {
-    "agents/herbie_gateway_client.py": "8088068f5cabbcce707d19542439416287a1ed45",
-    "agents/first_task.py": "afdc4154e3213d59a9b783592bbe1ec00a1321b1",
-    "agents/gateway_first_task.py": "b6d3bd0a8ed43d680b18254f28464d4cdc3ffd4e",
-    "integration/live_ollama_smoke.py": "5ee1b33406a4985cdbfda7047d970f5dd8594f31",
+    "agents/herbie_gateway_client.py": "d8720b138cd754ada11174e14c141f2ef8ace3ab",
+    "agents/first_task.py": "e8353df8f46ac632a30d93af177da2440d5462e4",
+    "agents/gateway_first_task.py": "7e7890ddd8e198b6b1a54855fe97baad8a52d323",
+    "integration/live_ollama_smoke.py": "1c129a637284cf60ae33c4c8b93c31f8d96dd076",
 }
 
 

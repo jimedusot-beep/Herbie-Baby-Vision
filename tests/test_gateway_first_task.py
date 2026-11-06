@@ -164,5 +164,28 @@ class GatewayFirstTaskTests(unittest.TestCase):
             self.assertNotIn('v' * 48, json.dumps(packet))
 
 
+    def test_coordinator_supplied_id_is_preserved_for_separate_cancel(self):
+        from uuid import uuid4
+        fixture = FakeAuthenticatedGateway()
+        self.addCleanup(fixture.close)
+        token = str(uuid4())
+        stop = threading.Event()
+        answer = adapter.propose_via_gateway(MODEL, fixture.url, 3, TOKEN,
+                                               request_id=token, cancel_event=stop)
+        self.assertEqual(answer, APPROVED)
+        self.assertEqual(fixture.requests[0][1]['request_id'], token)
+
+    def test_pre_cancelled_proposal_never_contacts_gateway(self):
+        fixture = FakeAuthenticatedGateway()
+        self.addCleanup(fixture.close)
+        stop = threading.Event()
+        stop.set()
+        from herbie_gateway_client import GatewayCancelled
+        with self.assertRaises(GatewayCancelled):
+            adapter.propose_via_gateway(MODEL, fixture.url, 3, TOKEN,
+                                        cancel_event=stop)
+        self.assertEqual(fixture.requests, [])
+
+
 if __name__ == '__main__':
     unittest.main()
