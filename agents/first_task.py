@@ -150,7 +150,11 @@ def main():
     parser.add_argument('--ollama-url', default='http://127.0.0.1:11434')
     parser.add_argument('--output', required=True, type=Path,
         help='Private evidence file; it can contain source code and test output')
+    parser.add_argument('--allow-trusted-host-tests', action='store_true',
+        help='Explicit opt-in to unsandboxed npm tests on an owner-approved repository')
     args = parser.parse_args()
+    if not args.allow_trusted_host_tests:
+        parser.error('Host npm tests are not sandboxed; use --allow-trusted-host-tests only for an owner-approved repository')
     if args.output.exists():
         parser.error('Choose a new evidence path; existing files are never overwritten')
     try:
