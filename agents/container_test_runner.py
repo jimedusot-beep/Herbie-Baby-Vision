@@ -43,7 +43,10 @@ def run_container_npm_test(checkout, *, image, timeout=90):
     binary = shutil.which("docker")
     if not binary:
         raise SandboxUnavailable("Local Docker CLI unavailable; no host fallback")
-    path = Path(checkout).resolve(strict=True)
+    try:
+        path = Path(checkout).resolve(strict=True)
+    except (OSError, ValueError, TypeError):
+        raise SandboxUnavailable("Invalid container worktree path") from None
     if not path.is_dir() or "," in str(path) or "\n" in str(path) or "\r" in str(path):
         raise SandboxUnavailable("Invalid container worktree path")
     try:
@@ -80,6 +83,11 @@ def run_container_npm_test(checkout, *, image, timeout=90):
         result = subprocess.run(
             cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL, timeout=timeout + 10, check=False)
+        # 125 means Docker startup failure, 126/127 execution failure.
+        # These are NOT ordinary npm test failures; never proceed to inference
+        # or mark them as a meaningful baseline failure.
+        if result.returncode in (125, 126, 127):
+            raise SandboxUnavailable("Isolated npm test could not start")
         return subprocess.CompletedProcess(cmd, result.returncode, "", "")
     except (OSError, subprocess.TimeoutExpired, subprocess.SubprocessError):
         raise SandboxUnavailable("Isolated npm test unavailable") from None
