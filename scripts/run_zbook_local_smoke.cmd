@@ -77,7 +77,7 @@ if /I not "%FIRST_TASK_SHA%"=="e8353df8f46ac632a30d93af177da2440d5462e4" (
   echo BLOCKED: Baby Vision coding worker has changed since review.
   goto :blocked
 )
-if /I not "%GATEWAY_TASK_SHA%"=="7e7890ddd8e198b6b1a54855fe97baad8a52d323" (
+if /I not "%GATEWAY_TASK_SHA%"=="fd08b81932bd18c36539281fe953d63fd3846f7f" (
   echo BLOCKED: Baby Vision gateway task adapter has changed since review.
   goto :blocked
 )
