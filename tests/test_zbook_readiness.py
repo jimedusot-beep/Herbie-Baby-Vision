@@ -27,7 +27,7 @@ class ZBookReadinessTests(unittest.TestCase):
 
     def test_reviewed_baby_vision_files_match_pins(self):
         self.assertTrue(probe.sources_match(ROOT))
-        self.assertEqual(len(probe.EXPECTED_BLOBS), 4)
+        self.assertEqual(len(probe.EXPECTED_BLOBS), 5)
 
     def test_ready_is_readiness_only_and_does_not_certify_model_execution(self):
         result = self.readiness()
