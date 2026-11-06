@@ -8,7 +8,7 @@ import json
 import os
 from pathlib import Path
 from urllib.parse import urlsplit
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from first_task import run_task, validate_proposal, SCRIPT, UNIT_SCRIPT
 from herbie_gateway_client import HerbieGatewayClient, validate_gateway_url
@@ -95,19 +95,29 @@ def main(argv=None):
                         help='New private evidence JSON path outside the public repository')
     parser.add_argument('--allow-trusted-host-tests', action='store_true',
         help='Explicit opt-in to unsandboxed npm tests on an owner-approved repository')
+    parser.add_argument('--request-id', default=None,
+        help='Canonical UUID retained by the operator; reuse it on every retry')
     args = parser.parse_args(argv)
     if args.output.exists():
         parser.error('Evidence output exists; never overwrite an earlier report')
     try:
         if not args.allow_trusted_host_tests:
             raise PermissionError('Host npm tests require explicit owner opt-in')
+        # Never generate a fresh UUID on a repeatable CLI invocation: doing
+        # so would bypass the gateway's durable same-ID replay protection.
+        try:
+            if (not isinstance(args.request_id, str)
+                    or str(UUID(args.request_id)) != args.request_id):
+                raise ValueError()
+        except ValueError:
+            raise ValueError('Explicit canonical --request-id required for host CLI') from None
         if not args.token_env.isidentifier():
             raise ValueError('Invalid token environment variable name')
         token = os.environ.get(args.token_env, '')
         if not token:
             raise ValueError('Gateway token environment variable not configured')
         evidence = run_gateway_task(args.repo, args.model, args.gateway_url, token,
-                                    base=args.base)
+                                    base=args.base, request_id=args.request_id)
     except Exception as exc:
         # Never echo source, tokens, pathnames, upstream errors, or model output.
         evidence = {'status':'blocked', 'merge_allowed':False, 'model':args.model,
