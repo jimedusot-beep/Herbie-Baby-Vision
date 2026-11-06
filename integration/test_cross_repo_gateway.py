@@ -199,6 +199,8 @@ class EndToEndContractTests(unittest.TestCase):
         # gateway candidate. This executes synthetic HTTP/Ollama, no real AI.
         with tempfile.TemporaryDirectory(prefix="bv-replay-fixture-") as folder:
             journal = str(Path(folder) / "accepted.sqlite3")
+            # The production gateway never silently recreates a lost journal.
+            self.module.DurableRequestIds.initialize(journal)
             request_id = str(uuid4())
 
             def start():
