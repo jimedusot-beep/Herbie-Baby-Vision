@@ -17,8 +17,9 @@ MODEL_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:/-]{0,99}\Z")
 MAX_TAG_BYTES = 262144
 EXPECTED_BLOBS = {
     "agents/herbie_gateway_client.py": "d8720b138cd754ada11174e14c141f2ef8ace3ab",
-    "agents/first_task.py": "e8353df8f46ac632a30d93af177da2440d5462e4",
-    "agents/gateway_first_task.py": "fd08b81932bd18c36539281fe953d63fd3846f7f",
+    "agents/first_task.py": "dd8738387d85fd9d85c51b3fcc0c0ff01e743093",
+    "agents/gateway_first_task.py": "71ff84e16a554e6b1ba3ec52e2ddb78bd264b5b1",
+    "agents/container_test_runner.py": "582522a4f9454bc4014f817725e8b91cadfc48cb",
     "integration/live_ollama_smoke.py": "1eaffa35b5638f076ecc6c825bf3139e5264e857",
 }
 

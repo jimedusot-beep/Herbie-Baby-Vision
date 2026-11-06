@@ -15,6 +15,8 @@ import tempfile
 import urllib.request
 from urllib.parse import urlsplit
 
+from container_test_runner import run_container_npm_test
+
 
 class TaskCancelled(RuntimeError):
     """Local STOP discarded pending work; does not kill a running subprocess."""
@@ -114,8 +116,16 @@ def git(repo, *arguments):
                           text=True, capture_output=True, timeout=20).stdout.strip()
 
 
+def _npm_tests(checkout, test_executor):
+    if test_executor is not None:
+        return test_executor(checkout)
+    # Historical *trusted-only* fallback. CLI blocks unless explicitly opted in.
+    return subprocess.run([npm_executable(), 'test'], cwd=checkout,
+                          capture_output=True, text=True, timeout=90)
+
+
 def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeout=90, proposer=None,
-             cancel_event=None):
+             cancel_event=None, test_executor=None):
     require_active(cancel_event)
     repo = Path(repo).resolve()
     commit = git(repo, 'rev-parse', '--verify', '--end-of-options', base + '^{commit}')
@@ -131,8 +141,7 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
             # Validate eligibility before spending time on model generation.
             patched_package(before, {'script': SCRIPT, 'reason': 'Eligibility check'})
             require_active(cancel_event)
-            baseline = subprocess.run([npm_executable(), 'test'], cwd=checkout,
-                capture_output=True, text=True, timeout=90)
+            baseline = _npm_tests(checkout, test_executor)
             require_active(cancel_event)
             if baseline.returncode == 0:
                 raise ValueError('npm test already succeeds; choose a task that is actually needed')
@@ -147,8 +156,7 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
             # The command is coordinator-owned and fixed, never supplied by the model.
             # This runs trusted project tests; a disposable checkout is not an OS sandbox.
             require_active(cancel_event)
-            result = subprocess.run([npm_executable(), 'test'], cwd=checkout,
-                capture_output=True, text=True, timeout=90)
+            result = _npm_tests(checkout, test_executor)
             require_active(cancel_event)
             evidence = review_result(proposal, returncode=result.returncode,
                 output=(result.stdout + result.stderr)[-200000:], patch=git(checkout, 'diff', '--', 'package.json'))
@@ -157,7 +165,11 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
                 'allowed_files': ['package.json'], 'hosted_ci_verified': False,
                 'baseline_test_exit_code': baseline.returncode,
                 'baseline_test_output': (baseline.stdout + baseline.stderr)[-10000:],
-                'model_generated': True, 'package_json': after})
+                'model_generated': True, 'package_json': after,
+                'npm_execution_mode': 'isolated_container' if test_executor is not None else 'trusted_host',
+                'host_git_worktree_used': True,
+                'untrusted_repository_approved': False,
+                'container_test_output_redacted': test_executor is not None})
             return evidence
         finally:
             git(repo, 'worktree', 'remove', '--force', str(checkout))
@@ -173,13 +185,20 @@ def main():
         help='Private evidence file; it can contain source code and test output')
     parser.add_argument('--allow-trusted-host-tests', action='store_true',
         help='Explicit opt-in to unsandboxed npm tests on an owner-approved repository')
+    parser.add_argument('--sandbox-image',
+        help='Optional already-installed local Docker Node image pinned at @sha256:<64 hex>')
     args = parser.parse_args()
-    if not args.allow_trusted_host_tests:
-        parser.error('Host npm tests are not sandboxed; use --allow-trusted-host-tests only for an owner-approved repository')
+    if bool(args.allow_trusted_host_tests) == bool(args.sandbox_image):
+        parser.error('Choose exactly one execution mode: trusted host tests OR a pinned sandbox image')
+    # Even in container mode, Git checkout and cleanup happen on the host.
+    # Never supply a foreign or unreviewed Git repository to this coordinator.
     if args.output.exists():
         parser.error('Choose a new evidence path; existing files are never overwritten')
     try:
-        evidence = run_task(args.repo, args.model, args.ollama_url, args.base)
+        executor = (lambda checkout: run_container_npm_test(
+            checkout, image=args.sandbox_image)) if args.sandbox_image else None
+        evidence = run_task(args.repo, args.model, args.ollama_url, args.base,
+                            test_executor=executor)
     except Exception as error:
         evidence = {'status': 'blocked', 'merge_allowed': False,
                     'model': args.model, 'test_exit_code': None,

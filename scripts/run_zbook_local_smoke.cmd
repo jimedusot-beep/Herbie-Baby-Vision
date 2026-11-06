@@ -59,10 +59,12 @@ set "SMOKE_SHA="
 set "GATEWAY_SHA="
 set "FIRST_TASK_SHA="
 set "GATEWAY_TASK_SHA="
+set "CONTAINER_RUNNER_SHA="
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/herbie_gateway_client.py') do set "CLIENT_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:integration/live_ollama_smoke.py') do set "SMOKE_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/first_task.py') do set "FIRST_TASK_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/gateway_first_task.py') do set "GATEWAY_TASK_SHA=%%H"
+for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/container_test_runner.py') do set "CONTAINER_RUNNER_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\HerbieGateway" rev-parse HEAD:socratic-agent/socratic_agent/worker_gateway.py') do set "GATEWAY_SHA=%%H"
 
 if /I not "%CLIENT_SHA%"=="d8720b138cd754ada11174e14c141f2ef8ace3ab" (
@@ -73,12 +75,16 @@ if /I not "%SMOKE_SHA%"=="1eaffa35b5638f076ecc6c825bf3139e5264e857" (
   echo BLOCKED: Smoke-test harness has changed since review. Do not bypass verification.
   goto :blocked
 )
-if /I not "%FIRST_TASK_SHA%"=="e8353df8f46ac632a30d93af177da2440d5462e4" (
+if /I not "%FIRST_TASK_SHA%"=="dd8738387d85fd9d85c51b3fcc0c0ff01e743093" (
   echo BLOCKED: Baby Vision coding worker has changed since review.
   goto :blocked
 )
-if /I not "%GATEWAY_TASK_SHA%"=="fd08b81932bd18c36539281fe953d63fd3846f7f" (
+if /I not "%GATEWAY_TASK_SHA%"=="71ff84e16a554e6b1ba3ec52e2ddb78bd264b5b1" (
   echo BLOCKED: Baby Vision gateway task adapter has changed since review.
+  goto :blocked
+)
+if /I not "%CONTAINER_RUNNER_SHA%"=="582522a4f9454bc4014f817725e8b91cadfc48cb" (
+  echo BLOCKED: Container test runner has changed since review.
   goto :blocked
 )
 if /I not "%GATEWAY_SHA%"=="df729520d94aa214e6920a471bdece289987bafb" (

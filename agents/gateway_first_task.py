@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from first_task import run_task, validate_proposal, SCRIPT, UNIT_SCRIPT
+from container_test_runner import run_container_npm_test
 from herbie_gateway_client import HerbieGatewayClient, validate_gateway_url
 
 
@@ -60,7 +61,7 @@ def propose_via_gateway(model, base_url, timeout, token, *, request_id=None, can
 
 
 def run_gateway_task(repo, model, gateway_url, token, *, base='HEAD',
-                     request_id=None, cancel_event=None):
+                     request_id=None, cancel_event=None, sandbox_image=None):
     """Reuse the bounded task; callers can supply an ID and local STOP signal.
 
     Caller must set cancel_event and separately invoke client.cancel(request_id)
@@ -72,8 +73,11 @@ def run_gateway_task(repo, model, gateway_url, token, *, base='HEAD',
     def proposer(current_model, current_url, timeout):
         return propose_via_gateway(current_model, current_url, timeout, token,
                                    request_id=request_id, cancel_event=cancel_event)
+    executor = (lambda checkout: run_container_npm_test(
+        checkout, image=sandbox_image)) if sandbox_image else None
     evidence = run_task(repo, model, base_url=url, base=base, timeout=60,
-                        proposer=proposer, cancel_event=cancel_event)
+                        proposer=proposer, cancel_event=cancel_event,
+                        test_executor=executor)
     evidence['proposal_transport'] = 'authenticated_herbie_gateway'
     evidence['remote_devices_tested'] = False
     evidence['merge_allowed'] = False
@@ -97,12 +101,14 @@ def main(argv=None):
         help='Explicit opt-in to unsandboxed npm tests on an owner-approved repository')
     parser.add_argument('--request-id', default=None,
         help='Canonical UUID retained by the operator; reuse it on every retry')
+    parser.add_argument('--sandbox-image',
+        help='Optional local digest-pinned Docker Node image; no network or image pull')
     args = parser.parse_args(argv)
     if args.output.exists():
         parser.error('Evidence output exists; never overwrite an earlier report')
     try:
-        if not args.allow_trusted_host_tests:
-            raise PermissionError('Host npm tests require explicit owner opt-in')
+        if bool(args.allow_trusted_host_tests) == bool(args.sandbox_image):
+            raise PermissionError('Choose trusted host opt-in OR isolated npm test image')
         # Never generate a fresh UUID on a repeatable CLI invocation: doing
         # so would bypass the gateway's durable same-ID replay protection.
         try:
@@ -116,8 +122,11 @@ def main(argv=None):
         token = os.environ.get(args.token_env, '')
         if not token:
             raise ValueError('Gateway token environment variable not configured')
+        kwargs = {'base': args.base, 'request_id': args.request_id}
+        if args.sandbox_image:
+            kwargs['sandbox_image'] = args.sandbox_image
         evidence = run_gateway_task(args.repo, args.model, args.gateway_url, token,
-                                    base=args.base, request_id=args.request_id)
+                                    **kwargs)
     except Exception as exc:
         # Never echo source, tokens, pathnames, upstream errors, or model output.
         evidence = {'status':'blocked', 'merge_allowed':False, 'model':args.model,

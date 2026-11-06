@@ -115,3 +115,48 @@ This is a new, intentional stricter CLI contract. The separately generated
 trusted-fixture smoke calls the reviewed Python API, not the CLI, and remains
 functional without a long-lived operator request ID. Manual re-execution
 should not be called resume: no durable job result retrieval is provided.
+
+## 2026-11-06 Step 3 draft — contain npm tests in an optional local container
+
+**Status: review-only / NOT production-ready.** This patch adds the optional
+`--sandbox-image docker.io/library/node@sha256:<64hex>` execution mode to the
+two first-worker CLIs. The image must **already be installed locally**; the
+runner forbids image pulling, remote Docker contexts, and explicit Docker
+endpoint overrides. The exact digest is operator-chosen and must be reviewed.
+No Docker install, image pull or real container execution is performed by
+GitHub's synthetic checks.
+
+When selected, **both** the baseline `npm test` and modified checkout
+`npm test` use a fixed local Docker invocation. Security options include:
+network disabled, read-only mount of the isolated checkout, read-only container
+root, an unprivileged UID/GID, dropped Linux capabilities, no-new-privileges,
+limits on process count, RAM and CPU, and a small no-exec tmpfs for npm cache.
+Only the container receives `CI=1`, `HOME=/tmp`, and a fixed cache path;
+no bearer token or host Docker socket is mounted. Test stdout/stderr are
+suppressed to avoid unbounded log collection. The runner always attempts
+container removal on failure or timeout. If the runtime, image or local
+engine is unavailable, execution is **blocked**; it never falls back to host
+npm. The legacy `--allow-trusted-host-tests` mode still exists for the
+previously reviewed, owner-trusted fixtures; the two modes cannot be combined.
+
+**CRITICAL: This is NOT yet safe for arbitrary untrusted repositories.**
+`first_task.run_task` still asks the host Git executable to resolve commits,
+create and remove a temporary worktree, and produce the diff. Host Git can
+invoke filters or other configuration inherited from the source repository;
+a temporary checkout does not eliminate that risk. Containerized npm adds
+defense-in-depth for owner-approved Git projects only. A release-ready
+untrusted-code mode must also move **all source checkout, Git operations,
+patch validation, and code execution** into an independently isolated
+disposable worker/VM, with audited mounts, host filesystem/network boundaries,
+process cleanup, credentials handling and rollback. Container isolation alone
+is not a guarantee against kernel or runtime escape.
+
+No Docker-specific readiness guarantee is implied by this repo's existing
+ZBook Ollama preflight. The Step 3 test suite uses fake `docker` subprocess
+responses only; it verifies generated flags and fail-closed selection, **not**
+a real daemon, image, Windows filesystem permissions, container escape
+resistance, or cancellation of a real model/OS process. Manual acceptance on
+the owner's ZBook must occur only after the operator deliberately chooses a
+trusted locally cached image digest and verifies Docker/Windows configuration.
+Do not auto-install Docker or pull images, deploy, merge, use public services,
+or spend money based on this patch.
