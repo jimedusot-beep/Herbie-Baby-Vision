@@ -66,3 +66,36 @@ Run it only with both reviewed source checkouts and
 remote service, or hardware is needed. A green result confirms this
 synthetic cross-repository protocol path, **not** a hard computation stop,
 subprocess termination, durable restart cancellation or deployment safety.
+
+## 2026-11-06 Step 2 draft: restart-safe request-ID deduplication
+
+A separate review-only H.E.R.B.I.E. gateway branch now offers an **explicit
+persistent SQLite journal** for accepted UUIDs. With a configured journal, it
+commits the UUID **before inference** and rejects that UUID with HTTP 409
+after a gateway restart, even if its first inference failed or was logically
+cancelled. Two gateway instances sharing the same trusted journal use SQLite
+transactions and a unique key. A journal failure blocks new inference.
+Journal initialization is a separate deliberate operation; startup does **not**
+silently replace a missing file.
+
+Baby Vision's existing client **never automatically retries** inference.
+Callers must retain their original UUID across an attempted retry; the new
+`integration/test_cross_repo_gateway.py` synthetic fixture verifies that
+reusing that UUID after recreating the private gateway does **not** generate
+a second model response. It uses a fake Ollama on loopback, a private review
+checkout, and one temporary SQLite database. No remote systems or real AI
+inference are involved.
+
+**Important limitations:** A *different* UUID may repeat equivalent work.
+No result cache, job reconciliation, completion-status recovery, replay
+journal backup/restore, token revocation, OS sandbox, real Ollama cancellation
+or hardware emergency-stop is implemented. The existing opt-in local smoke
+harness uses an in-memory gateway test instance unless a persistent journal
+is explicitly supplied. Its passing status must not be interpreted as
+restart-safe production mode.
+
+The private gateway file is allowed for source inspection only through its
+exact reviewed Git blob fingerprint; private gateway implementation must
+never be published to this public repository. Keep primary #5/#93, existing
+STOP review #31/#140, and new Step 2 review PRs separate and draft until
+tests and human review pass.
