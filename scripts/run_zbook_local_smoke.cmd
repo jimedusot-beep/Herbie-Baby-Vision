@@ -42,7 +42,7 @@ if errorlevel 1 (
 )
 
 echo Cloning the unified H.E.R.B.I.E. integration candidate and Baby Vision worker branch...
-git clone --quiet --depth 1 --single-branch --branch codex/v02d-real-ollama-local-smoke "https://github.com/jimedusot-beep/Herbie-Baby-Vision.git" "%WORK%\BabyVision"
+git clone --quiet --depth 1 --single-branch --branch audit/bv5-explicit-host-tests-20261106 "https://github.com/jimedusot-beep/Herbie-Baby-Vision.git" "%WORK%\BabyVision"
 if errorlevel 1 (
   echo BLOCKED: Could not clone the Baby Vision review branch.
   goto :blocked
