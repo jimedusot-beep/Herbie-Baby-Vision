@@ -48,3 +48,21 @@ The matching **private**, separately reviewed gateway candidate adds authenticat
 **Critical limits:** The cancellation endpoint does **not** interrupt the underlying Ollama HTTP request, kill a running npm subprocess, free the single-inference slot early, persist a cancellation across server restart, or provide a motor emergency stop. A STOP event is a caller-controlled signal; a consumer must set it and use the same request UUID when separately calling `cancel()`. The older pinned H.E.R.B.I.E. #93 gateway does **not** expose the new endpoint; calling `cancel()` against it fails closed. Existing read-only and real-Ollama smoke remains pinned to the original private gateway unless the separate reviewed cancel candidate is explicitly chosen. DO NOT enable remote listeners, automation, or untrusted repository execution based on these tests.
 
 Acceptance before integrating these two branches: review the new private gateway source against its pinned hash, run its local synthetic gateway tests, pass all public client/worker regression and source-pin checks, then reconcile both PRs without publishing any private H.E.R.B.I.E. code to the public repository. Full process interruption and reliable restart behavior remain separate work.
+
+### Cross-repository cancellation acceptance (review-only)
+
+The separate `integration/test_cross_repo_gateway.py` suite now includes
+`test_cancel_with_real_client_and_fake_ollama_suppresses_stale_reply`.
+It drives the **real Baby Vision HTTP client** through the **exact pinned
+private logical-STOP gateway source** into a slow **synthetic** Ollama server.
+It verifies that incorrect credentials cannot cancel, a valid cancellation
+is acknowledged, the late reply is discarded, and replay with the old request
+ID is rejected. This test is **not** part of the public CI because private
+H.E.R.B.I.E. code must not be uploaded to a public runner.
+
+Run it only with both reviewed source checkouts and
+`HERBIE_WORKER_GATEWAY_PY` set to the private
+`socratic-agent/socratic_agent/worker_gateway.py` file. No actual model,
+remote service, or hardware is needed. A green result confirms this
+synthetic cross-repository protocol path, **not** a hard computation stop,
+subprocess termination, durable restart cancellation or deployment safety.
