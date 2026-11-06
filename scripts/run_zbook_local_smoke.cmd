@@ -65,7 +65,7 @@ for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/first
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/gateway_first_task.py') do set "GATEWAY_TASK_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\HerbieGateway" rev-parse HEAD:socratic-agent/socratic_agent/worker_gateway.py') do set "GATEWAY_SHA=%%H"
 
-if /I not "%CLIENT_SHA%"=="96056a3aed2328f4a55b1030788672de61c04235" (
+if /I not "%CLIENT_SHA%"=="8088068f5cabbcce707d19542439416287a1ed45" (
   echo BLOCKED: Baby Vision client has changed since review. Do not bypass verification.
   goto :blocked
 )
