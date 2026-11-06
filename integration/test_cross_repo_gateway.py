@@ -13,6 +13,7 @@ from pathlib import Path
 import secrets
 import sys
 import threading
+import tempfile
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from uuid import uuid4
@@ -192,6 +193,51 @@ class EndToEndContractTests(unittest.TestCase):
         self.assertEqual(len(self.inference_requests), 1)
         with self.assertRaises(GatewayError):
             self.client.infer('testing', 'Attempt repeated task', request_id)
+
+    def test_duplicate_id_is_denied_after_gateway_restart_without_second_inference(self):
+        # The accepted-ID journal exists only for the newer reviewed private
+        # gateway candidate. This executes synthetic HTTP/Ollama, no real AI.
+        with tempfile.TemporaryDirectory(prefix="bv-replay-fixture-") as folder:
+            journal = str(Path(folder) / "accepted.sqlite3")
+            request_id = str(uuid4())
+
+            def start():
+                server = self.module.WorkerGatewayServer(
+                    ('127.0.0.1', 0), token=self.secret,
+                    allowed_models=(MODEL,),
+                    ollama_url=f'http://127.0.0.1:{self.ollama.server_port}',
+                    max_requests_per_minute=20, request_registry_path=journal)
+                thread = threading.Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                client = HerbieGatewayClient(
+                    f'http://127.0.0.1:{server.server_port}',
+                    self.secret, MODEL, timeout=3)
+                return server, thread, client
+
+            first, first_thread, first_client = start()
+            try:
+                self.assertEqual(first_client.infer('testing', 'One accepted task',
+                                                    request_id),
+                                 'SYNTHETIC: One accepted task')
+                self.assertEqual(len(self.inference_requests), 1)
+            finally:
+                first.shutdown()
+                first.server_close()
+                first_thread.join(timeout=3)
+
+            second, second_thread, second_client = start()
+            try:
+                with self.assertRaises(GatewayError):
+                    second_client.infer('testing', 'Replay must be denied', request_id)
+                self.assertEqual(len(self.inference_requests), 1)
+                self.assertEqual(second_client.infer('testing', 'New UUID task',
+                                                     str(uuid4())),
+                                 'SYNTHETIC: New UUID task')
+                self.assertEqual(len(self.inference_requests), 2)
+            finally:
+                second.shutdown()
+                second.server_close()
+                second_thread.join(timeout=3)
 
     def test_retry_is_not_automatic_for_an_unavailable_server(self):
         self.force_ollama_error = True
