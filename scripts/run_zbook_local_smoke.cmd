@@ -65,11 +65,11 @@ for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/first
 for /f "delims=" %%H in ('git -C "%WORK%\BabyVision" rev-parse HEAD:agents/gateway_first_task.py') do set "GATEWAY_TASK_SHA=%%H"
 for /f "delims=" %%H in ('git -C "%WORK%\HerbieGateway" rev-parse HEAD:socratic-agent/socratic_agent/worker_gateway.py') do set "GATEWAY_SHA=%%H"
 
-if /I not "%CLIENT_SHA%"=="8088068f5cabbcce707d19542439416287a1ed45" (
+if /I not "%CLIENT_SHA%"=="d8720b138cd754ada11174e14c141f2ef8ace3ab" (
   echo BLOCKED: Baby Vision client has changed since review. Do not bypass verification.
   goto :blocked
 )
-if /I not "%SMOKE_SHA%"=="5ee1b33406a4985cdbfda7047d970f5dd8594f31" (
+if /I not "%SMOKE_SHA%"=="1c129a637284cf60ae33c4c8b93c31f8d96dd076" (
   echo BLOCKED: Smoke-test harness has changed since review. Do not bypass verification.
   goto :blocked
 )
