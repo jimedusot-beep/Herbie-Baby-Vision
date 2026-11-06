@@ -69,7 +69,7 @@ if /I not "%CLIENT_SHA%"=="d8720b138cd754ada11174e14c141f2ef8ace3ab" (
   echo BLOCKED: Baby Vision client has changed since review. Do not bypass verification.
   goto :blocked
 )
-if /I not "%SMOKE_SHA%"=="1c129a637284cf60ae33c4c8b93c31f8d96dd076" (
+if /I not "%SMOKE_SHA%"=="ac6998c2a7a19005973834a2e9026e5c41145f66" (
   echo BLOCKED: Smoke-test harness has changed since review. Do not bypass verification.
   goto :blocked
 )
