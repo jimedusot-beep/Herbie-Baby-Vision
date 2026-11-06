@@ -69,7 +69,7 @@ if /I not "%CLIENT_SHA%"=="d8720b138cd754ada11174e14c141f2ef8ace3ab" (
   echo BLOCKED: Baby Vision client has changed since review. Do not bypass verification.
   goto :blocked
 )
-if /I not "%SMOKE_SHA%"=="1c129a637284cf60ae33c4c8b93c31f8d96dd076" (
+if /I not "%SMOKE_SHA%"=="1eaffa35b5638f076ecc6c825bf3139e5264e857" (
   echo BLOCKED: Smoke-test harness has changed since review. Do not bypass verification.
   goto :blocked
 )
@@ -77,7 +77,7 @@ if /I not "%FIRST_TASK_SHA%"=="e8353df8f46ac632a30d93af177da2440d5462e4" (
   echo BLOCKED: Baby Vision coding worker has changed since review.
   goto :blocked
 )
-if /I not "%GATEWAY_TASK_SHA%"=="7e7890ddd8e198b6b1a54855fe97baad8a52d323" (
+if /I not "%GATEWAY_TASK_SHA%"=="fd08b81932bd18c36539281fe953d63fd3846f7f" (
   echo BLOCKED: Baby Vision gateway task adapter has changed since review.
   goto :blocked
 )

@@ -18,8 +18,8 @@ MAX_TAG_BYTES = 262144
 EXPECTED_BLOBS = {
     "agents/herbie_gateway_client.py": "d8720b138cd754ada11174e14c141f2ef8ace3ab",
     "agents/first_task.py": "e8353df8f46ac632a30d93af177da2440d5462e4",
-    "agents/gateway_first_task.py": "7e7890ddd8e198b6b1a54855fe97baad8a52d323",
-    "integration/live_ollama_smoke.py": "1c129a637284cf60ae33c4c8b93c31f8d96dd076",
+    "agents/gateway_first_task.py": "fd08b81932bd18c36539281fe953d63fd3846f7f",
+    "integration/live_ollama_smoke.py": "1eaffa35b5638f076ecc6c825bf3139e5264e857",
 }
 
 
