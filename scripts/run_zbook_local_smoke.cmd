@@ -73,11 +73,11 @@ if /I not "%SMOKE_SHA%"=="5ee1b33406a4985cdbfda7047d970f5dd8594f31" (
   echo BLOCKED: Smoke-test harness has changed since review. Do not bypass verification.
   goto :blocked
 )
-if /I not "%FIRST_TASK_SHA%"=="b2447db692cd45076b3801c36192deb688972397" (
+if /I not "%FIRST_TASK_SHA%"=="afdc4154e3213d59a9b783592bbe1ec00a1321b1" (
   echo BLOCKED: Baby Vision coding worker has changed since review.
   goto :blocked
 )
-if /I not "%GATEWAY_TASK_SHA%"=="dec81b7786517c37d84a3cdbda0990f653716944" (
+if /I not "%GATEWAY_TASK_SHA%"=="b6d3bd0a8ed43d680b18254f28464d4cdc3ffd4e" (
   echo BLOCKED: Baby Vision gateway task adapter has changed since review.
   goto :blocked
 )
