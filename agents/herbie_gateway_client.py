@@ -139,7 +139,14 @@ class HerbieGatewayClient:
         if (not isinstance(body, dict) or set(body) != {'schema_version', 'request_id', 'model', 'reply'} or
                 type(body['schema_version']) is not int or body['schema_version'] != 1 or body['request_id'] != request_id or
                 body['model'] != self.model or not isinstance(body['reply'], str) or
-                not body['reply'].strip() or len(body['reply']) > 20_000 or
-                len(body['reply'].encode('utf-8')) > MAX_REPLY_UTF8_BYTES):
+                not body['reply'].strip() or len(body['reply']) > 20_000):
+            raise GatewayError('Invalid H.E.R.B.I.E. gateway response contract')
+        try:
+            reply_bytes = len(body['reply'].encode('utf-8'))
+        except UnicodeEncodeError:
+            # JSON may contain escaped unpaired UTF-16 surrogates, which are
+            # not valid UTF-8 and must not leak a transport-level exception.
+            raise GatewayError('Invalid H.E.R.B.I.E. gateway response contract') from None
+        if reply_bytes > MAX_REPLY_UTF8_BYTES:
             raise GatewayError('Invalid H.E.R.B.I.E. gateway response contract')
         return body['reply']
