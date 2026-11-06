@@ -14,6 +14,7 @@ from uuid import UUID
 
 MAX_PROMPT_BYTES = 12_000
 MAX_RESPONSE_BYTES = 65_536
+MAX_REPLY_UTF8_BYTES = 24_000  # Match the authenticated Herbie gateway.
 TASK_TYPES = frozenset({'coding', 'testing', 'research', 'review', 'npm_test_alias_v1'})
 
 
@@ -138,6 +139,7 @@ class HerbieGatewayClient:
         if (not isinstance(body, dict) or set(body) != {'schema_version', 'request_id', 'model', 'reply'} or
                 type(body['schema_version']) is not int or body['schema_version'] != 1 or body['request_id'] != request_id or
                 body['model'] != self.model or not isinstance(body['reply'], str) or
-                not body['reply'].strip() or len(body['reply']) > 20_000):
+                not body['reply'].strip() or len(body['reply']) > 20_000 or
+                len(body['reply'].encode('utf-8')) > MAX_REPLY_UTF8_BYTES):
             raise GatewayError('Invalid H.E.R.B.I.E. gateway response contract')
         return body['reply']
