@@ -165,7 +165,11 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
                 'allowed_files': ['package.json'], 'hosted_ci_verified': False,
                 'baseline_test_exit_code': baseline.returncode,
                 'baseline_test_output': (baseline.stdout + baseline.stderr)[-10000:],
-                'model_generated': True, 'package_json': after})
+                'model_generated': True, 'package_json': after,
+                'npm_execution_mode': 'isolated_container' if test_executor is not None else 'trusted_host',
+                'host_git_worktree_used': True,
+                'untrusted_repository_approved': False,
+                'container_test_output_redacted': test_executor is not None})
             return evidence
         finally:
             git(repo, 'worktree', 'remove', '--force', str(checkout))
