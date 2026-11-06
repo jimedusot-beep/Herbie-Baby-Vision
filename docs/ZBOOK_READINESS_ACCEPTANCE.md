@@ -30,3 +30,11 @@ Even a successful real-model smoke **does not prove**:
 Keep public Baby Vision PR #5 and audit issue #6 open until those decisions are explicitly reviewed. The private H.E.R.B.I.E. gateway is still on draft PR #93's branch, not private main.
 
 GitHub CI checks the preflight and launcher on a **hosted Windows runner with mocks** and the existing Python suite. It does not test your actual ZBook, installed Ollama, or real inference.
+
+## 2026-11-06 host-execution opt-in audit (separate, unmerged branch)
+
+The historical `agents/first_task.py` and `agents/gateway_first_task.py` **command-line** entry points now refuse to run host npm tests by default. An owner must explicitly supply `--allow-trusted-host-tests` for a repository they have personally reviewed. The gateway CLI records a sanitized blocked result without calling the worker when the flag is absent. The original reviewed `run_zbook_local_smoke.cmd` still uses an internally generated, known trusted fixture through the Python API; the new CLI gate does not add a sandbox or authorize untrusted repositories.
+
+This audit branch repins source integrity SHA-1 Git blobs and retains the review launcher target `codex/v02d-real-ollama-local-smoke` so it is suitable for PR #5 integration after review. The changed first-task source pins are updated for this review branch; source pins must be checked again if source code changes. Run full exact-head tests and Windows smoke acceptance before any rollout. Do not combine this with deployment or merge.
+
+**Not fixed:** process-restart duplicate request IDs, cancellation of in-flight Ollama calls, stale responses after client disconnect, and OS isolation of trusted repository test scripts. These remain release blockers for any general-purpose or remote Worker Bee. No Tailscale/mobile/hardware acceptance is implied.
