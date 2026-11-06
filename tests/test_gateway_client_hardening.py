@@ -91,5 +91,46 @@ class GatewayClientHardeningTests(unittest.TestCase):
             worker.join(timeout=3)
 
 
+    def test_multibyte_reply_must_fit_server_utf8_byte_budget(self):
+        """The server caps reply bytes, not just Unicode characters."""
+        class Reply(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_POST(self):
+                request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                body = json.dumps({
+                    'schema_version': 1,
+                    'request_id': request['request_id'],
+                    'model': request['model'],
+                    'reply': self.server.fixture_reply,
+                }, ensure_ascii=False).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Reply)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        try:
+            client = clientmod.HerbieGatewayClient(
+                f'http://127.0.0.1:{server.server_port}', TOKEN, MODEL, timeout=3)
+            # 12,000 × 2 UTF-8 bytes fits exactly, but 12,001 exceeds 24 KB.
+            server.fixture_reply = '\u00e9' * 12000
+            self.assertEqual(
+                client.infer('testing', 'synthetic reply size fixture', str(uuid4())),
+                server.fixture_reply)
+            server.fixture_reply = '\u00e9' * 12001
+            with self.assertRaises(clientmod.GatewayError):
+                client.infer('testing', 'synthetic reply size fixture', str(uuid4()))
+        finally:
+            server.shutdown()
+            server.server_close()
+            worker.join(timeout=3)
+
+
+
 if __name__ == '__main__':
     unittest.main()
