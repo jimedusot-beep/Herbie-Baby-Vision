@@ -32,7 +32,7 @@ class WindowsSmokeLauncherTests(unittest.TestCase):
 
     def test_launcher_uses_only_the_merged_candidate_checkout_and_opt_in_smoke(self):
         cmd = (ROOT / 'scripts' / 'run_zbook_local_smoke.cmd').read_text()
-        self.assertIn('--branch codex/v02d-real-ollama-local-smoke', cmd)
+        self.assertIn('--branch audit/bv5-explicit-host-tests-20261106', cmd)
         self.assertIn('--branch integration/herbie-engineering-20261031', cmd)
         self.assertIn('--run-live', cmd)
         self.assertIn('--run-fixture-task', cmd)
