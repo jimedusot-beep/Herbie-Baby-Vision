@@ -35,6 +35,8 @@ MAX_TAGS_BYTES = 262_144
 REVIEWED_GATEWAY_GIT_BLOB_SHA = "df729520d94aa214e6920a471bdece289987bafb"
 # Opt-in review-only logical cancellation gateway branch; not merged into #93.
 REVIEWED_GATEWAY_GIT_BLOB_SHA_LOGICAL_STOP = "701717ed2a364b7c6c2c255485cd079e79be1a36"
+# Separate private Step 2 durable replay candidate; explicit review-only source.
+REVIEWED_GATEWAY_GIT_BLOB_SHA_DURABLE_IDS = "e396353868d1c36b7721294c7253c0a9eaac3d00"
 # Earlier reviewed snapshots remain usable for reproducing those runs.
 REVIEWED_GATEWAY_GIT_BLOB_SHA_ORIGINAL = "eef2eebc43fc7aaec67ebd3cc652ee3b0dd7d9c4"
 REVIEWED_GATEWAY_GIT_BLOB_SHA_RETRY_ORDER = "570a7d3077675e34ecae36f0abcdc76a7a5df7cb"
@@ -66,6 +68,7 @@ def load_gateway_module(path):
     if git_blob not in (
         REVIEWED_GATEWAY_GIT_BLOB_SHA,
         REVIEWED_GATEWAY_GIT_BLOB_SHA_LOGICAL_STOP,
+        REVIEWED_GATEWAY_GIT_BLOB_SHA_DURABLE_IDS,
         REVIEWED_GATEWAY_GIT_BLOB_SHA_ORIGINAL,
         REVIEWED_GATEWAY_GIT_BLOB_SHA_RETRY_ORDER,
     ):
