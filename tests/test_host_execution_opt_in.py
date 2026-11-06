@@ -12,6 +12,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
+from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "agents"))
@@ -67,7 +68,9 @@ class HostExecutionOptInTests(unittest.TestCase):
                 "--gateway-url", "http://127.0.0.1:8787",
                 "--output", str(output),
                 "--allow-trusted-host-tests",
+                "--request-id", str(uuid4()),
             ]
+            expected_id = args[-1]
             evidence = {
                 "status": "ready_for_human_review",
                 "test_exit_code": 0,
@@ -80,7 +83,41 @@ class HostExecutionOptInTests(unittest.TestCase):
                 status = gateway_first_task.main(args)
             self.assertEqual(status, 0)
             worker.assert_called_once()
+            self.assertEqual(worker.call_args.kwargs["request_id"], expected_id)
             self.assertEqual(json.loads(output.read_text()), evidence)
+
+
+    def test_opted_in_cli_without_stable_request_id_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "report.json"
+            args = ["--repo", tmp, "--model", MODEL,
+                    "--gateway-url", "http://127.0.0.1:8787",
+                    "--output", str(output), "--allow-trusted-host-tests"]
+            with patch.dict(os.environ, {"HERBIE_WORKER_TOKEN": TOKEN}), \
+                 patch.object(gateway_first_task, "run_gateway_task") as worker, \
+                 redirect_stdout(io.StringIO()):
+                status = gateway_first_task.main(args)
+            self.assertEqual(status, 1)
+            worker.assert_not_called()
+            packet = json.loads(output.read_text())
+            self.assertEqual(packet["status"], "blocked")
+            self.assertEqual(packet["error_type"], "ValueError")
+            self.assertNotIn(TOKEN, json.dumps(packet))
+
+    def test_opted_in_cli_rejects_malformed_replay_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "report.json"
+            args = ["--repo", tmp, "--model", MODEL,
+                    "--gateway-url", "http://127.0.0.1:8787",
+                    "--output", str(output), "--allow-trusted-host-tests",
+                    "--request-id", "not-a-uuid"]
+            with patch.dict(os.environ, {"HERBIE_WORKER_TOKEN": TOKEN}), \
+                 patch.object(gateway_first_task, "run_gateway_task") as worker, \
+                 redirect_stdout(io.StringIO()):
+                status = gateway_first_task.main(args)
+            self.assertEqual(status, 1)
+            worker.assert_not_called()
+            self.assertEqual(json.loads(output.read_text())["status"], "blocked")
 
 
 if __name__ == "__main__":
