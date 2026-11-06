@@ -23,3 +23,5 @@ jobs:
           node-version: '22'
       - name: Run worker boundary and disposable-checkout tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Verify old gateway dashboard and M1 mobile dashboard
+        run: node --test tests/test_review_dashboard.cjs tests/test_m1_mobile_review.cjs

@@ -1,0 +1,41 @@
+name: Baby Vision ZBook read-only readiness checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/zbook_readiness.py
+      - scripts/run_zbook_local_smoke.cmd
+      - tests/test_zbook_readiness.py
+      - .github/workflows/zbook-readiness.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synthetic readiness regression suite
+        run: python -B -m unittest discover -s tests -p 'test_zbook_readiness.py' -v
+      - name: CLI rejects invalid model without inference or cloning
+        shell: pwsh
+        run: |
+          python -c 'import json, subprocess, sys; p = subprocess.run([sys.executable, "-B", "scripts/zbook_readiness.py", "--model", "invalid model"], capture_output=True, text=True, timeout=10); assert p.returncode == 2; assert json.loads(p.stdout)["status"] == "blocked"; print("Expected blocked preflight verified")'
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synthetic readiness regression suite
+        run: python -B -m unittest discover -s tests -p 'test_zbook_readiness.py' -v

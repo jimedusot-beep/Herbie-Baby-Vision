@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Baby Vision — Worker Bee #1 Review</title>
+<style>
+:root{color-scheme:light dark;font:16px/1.55 system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:Canvas;color:CanvasText}
+main{max-width:850px;margin:auto;padding:clamp(16px,5vw,38px)}
+h1{font-size:clamp(1.45rem,4vw,2rem);line-height:1.2;margin:.4rem 0}
+h2{font-size:1.15rem;margin:0 0 .6rem}
+p{margin:.5rem 0 1rem}
+.subtitle{color:GrayText}
+section{border:1px solid color-mix(in srgb,CanvasText 22%,Canvas);border-radius:14px;padding:20px;margin:18px 0}
+label{font-weight:650;display:block;margin-bottom:8px}
+input[type=file]{max-width:100%;display:block;font:inherit}
+button{font:inherit;padding:10px 14px;border-radius:9px;border:1px solid color-mix(in srgb,CanvasText 35%,Canvas);background:ButtonFace;color:ButtonText;cursor:pointer}
+button:disabled{opacity:.48;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid Highlight;outline-offset:3px}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+.status{font-weight:700}
+dl{display:grid;grid-template-columns:minmax(8rem,1fr) 2fr;gap:8px 16px;margin:0}
+dt{color:GrayText}
+dd{margin:0;overflow-wrap:anywhere}
+pre{max-height:380px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;border-radius:9px;background:color-mix(in srgb,CanvasText 8%,Canvas)}
+small{color:GrayText}
+@media(max-width:540px){dl{grid-template-columns:1fr}dt{margin-top:8px}}
+</style>
+<script src="review.js" defer></script>
+</head>
+<body>
+<main>
+<header>
+<p class="subtitle">H.E.R.B.I.E. Hive · Baby Vision · Developer preview</p>
+<h1>Worker Bee #1 — Local Review</h1>
+<p>Open a private evidence packet produced by the existing bounded Baby Vision coding worker. This page cannot start a worker, run tests, verify Git commits, approve a GitHub pull request, or merge code.</p>
+</header>
+<section aria-labelledby="loadTitle">
+<h2 id="loadTitle">1. Open a report</h2>
+<label for="evidenceFile">Private worker evidence (JSON)</label>
+<input id="evidenceFile" type="file" accept=".json,application/json">
+<p><small>Reads the selected file only in this browser. No analytics, uploads, networking, or persistence. Maximum 256 KiB. Do not use this page with untrusted third-party scripts or extensions.</small></p>
+<p class="status" id="reviewStatus" role="status" aria-live="polite">No report loaded</p>
+<p id="reviewDetail">Choose a private JSON evidence file. Nothing is uploaded.</p>
+</section>
+<section aria-labelledby="evidenceTitle">
+<h2 id="evidenceTitle">2. Review the claimed evidence</h2>
+<dl>
+<dt>Task</dt><dd id="taskName">—</dd>
+<dt>Model label</dt><dd id="modelName">—</dd>
+<dt>Source commit</dt><dd id="commitSha">—</dd>
+<dt>Test exit code</dt><dd id="testCode">—</dd>
+</dl>
+<p><small>These values are self-reported by a JSON file. Review the original repository diff and trusted test logs before making a release decision. Raw test logs are never displayed here.</small></p>
+<button id="showDiff" type="button" disabled>Show proposed diff</button>
+<pre id="diffPreview" hidden aria-label="Private proposed source diff"></pre>
+</section>
+<section aria-labelledby="decisionTitle">
+<h2 id="decisionTitle">3. Record a local decision</h2>
+<p>These controls change only the status on this screen. They never modify GitHub or bypass human review.</p>
+<div class="actions">
+<button id="markReviewed" type="button" disabled>Mark reviewed locally</button>
+<button id="markNeedsWork" type="button" disabled>Mark needs work</button>
+<button id="clearReview" type="button">Clear report</button>
+</div>
+</section>
+<footer><small>Software prototype only. Never interpret this dashboard as proof of a real Ollama run, a secured sandbox, or a successfully merged change.</small></footer>
+</main>
+</body>
+</html>

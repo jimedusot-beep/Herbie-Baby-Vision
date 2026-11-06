@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import urllib.request
 from urllib.parse import urlsplit
@@ -17,6 +18,16 @@ from urllib.parse import urlsplit
 
 SCRIPT = 'npm run test:unit'
 UNIT_SCRIPT = 'node --test tests/*.test.cjs'
+
+
+def npm_executable(platform=None):
+    """Choose the fixed npm launcher that Python can start on this OS.
+
+    Windows Python subprocess does not necessarily resolve bare npm to npm.cmd.
+    This selects an installed launcher; it never accepts model-supplied commands.
+    """
+    platform = sys.platform if platform is None else platform
+    return 'npm.cmd' if platform == 'win32' else 'npm'
 
 
 def validate_proposal(proposal):
@@ -91,7 +102,7 @@ def git(repo, *arguments):
                           text=True, capture_output=True, timeout=20).stdout.strip()
 
 
-def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeout=90):
+def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeout=90, proposer=None):
     repo = Path(repo).resolve()
     commit = git(repo, 'rev-parse', '--verify', '--end-of-options', base + '^{commit}')
     with tempfile.TemporaryDirectory(prefix='baby-vision-task-') as directory:
@@ -104,11 +115,11 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
             before = json.loads(package_file.read_text())
             # Validate eligibility before spending time on model generation.
             patched_package(before, {'script': SCRIPT, 'reason': 'Eligibility check'})
-            baseline = subprocess.run(['npm', 'test'], cwd=checkout,
+            baseline = subprocess.run([npm_executable(), 'test'], cwd=checkout,
                 capture_output=True, text=True, timeout=90)
             if baseline.returncode == 0:
                 raise ValueError('npm test already succeeds; choose a task that is actually needed')
-            proposal = propose(model, base_url, timeout)
+            proposal = (proposer or propose)(model, base_url, timeout)
             after = patched_package(before, proposal)
             package_file.write_text(json.dumps(after, indent=2) + '\n')
             git(checkout, 'diff', '--check')
@@ -116,7 +127,7 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
                 raise ValueError('Change escaped the approved package.json scope')
             # The command is coordinator-owned and fixed, never supplied by the model.
             # This runs trusted project tests; a disposable checkout is not an OS sandbox.
-            result = subprocess.run(['npm', 'test'], cwd=checkout,
+            result = subprocess.run([npm_executable(), 'test'], cwd=checkout,
                 capture_output=True, text=True, timeout=90)
             evidence = review_result(proposal, returncode=result.returncode,
                 output=(result.stdout + result.stderr)[-200000:], patch=git(checkout, 'diff', '--', 'package.json'))
@@ -139,7 +150,11 @@ def main():
     parser.add_argument('--ollama-url', default='http://127.0.0.1:11434')
     parser.add_argument('--output', required=True, type=Path,
         help='Private evidence file; it can contain source code and test output')
+    parser.add_argument('--allow-trusted-host-tests', action='store_true',
+        help='Explicit opt-in to unsandboxed npm tests on an owner-approved repository')
     args = parser.parse_args()
+    if not args.allow_trusted_host_tests:
+        parser.error('Host npm tests are not sandboxed; use --allow-trusted-host-tests only for an owner-approved repository')
     if args.output.exists():
         parser.error('Choose a new evidence path; existing files are never overwritten')
     try:
