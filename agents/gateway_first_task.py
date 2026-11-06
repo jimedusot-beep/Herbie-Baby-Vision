@@ -85,10 +85,14 @@ def main(argv=None):
     parser.add_argument('--base', default='HEAD', help='Committed source revision')
     parser.add_argument('--output', required=True, type=Path,
                         help='New private evidence JSON path outside the public repository')
+    parser.add_argument('--allow-trusted-host-tests', action='store_true',
+        help='Explicit opt-in to unsandboxed npm tests on an owner-approved repository')
     args = parser.parse_args(argv)
     if args.output.exists():
         parser.error('Evidence output exists; never overwrite an earlier report')
     try:
+        if not args.allow_trusted_host_tests:
+            raise PermissionError('Host npm tests require explicit owner opt-in')
         if not args.token_env.isidentifier():
             raise ValueError('Invalid token environment variable name')
         token = os.environ.get(args.token_env, '')
