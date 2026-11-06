@@ -124,6 +124,17 @@ class GatewayClientTests(unittest.TestCase):
         self.assertNotIn(TOKEN, str(ctx.exception))
         self.assertEqual(len(seen), 1)
 
+    def test_server_replay_conflict_does_not_trigger_new_request_id(self):
+        def responder(handler, incoming):
+            self.respond(handler, {'error': 'request ID already accepted'}, status=409)
+        url, seen = self.server(responder)
+        client = gateway.HerbieGatewayClient(url, TOKEN, MODEL, timeout=3)
+        original_id = str(uuid4())
+        with self.assertRaises(gateway.GatewayError):
+            client.infer('testing', 'Retry must not invent a new ID', original_id)
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(json.loads(seen[0][2])['request_id'], original_id)
+
     def test_redirect_rejected_without_following(self):
         def responder(handler, incoming):
             handler.send_response(302)
