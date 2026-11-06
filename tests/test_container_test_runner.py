@@ -161,6 +161,38 @@ class ContainerCliTests(unittest.TestCase):
             self.assertEqual(task.call_args.kwargs["sandbox_image"], IMAGE)
             self.assertEqual(json.loads(output.read_text()), evidence)
 
+    def test_gateway_worker_passes_container_executor_into_both_test_stages(self):
+        evidence = {"status": "ready_for_human_review",
+                    "merge_allowed": False, "test_exit_code": 0}
+        with patch.object(gateway_first_task, "run_task",
+                          return_value=evidence) as worker:
+            result = gateway_first_task.run_gateway_task(
+                "unused-trusted-fixture", "synthetic:1b",
+                "http://127.0.0.1:8787", TOKEN, sandbox_image=IMAGE)
+        self.assertEqual(result["status"], "ready_for_human_review")
+        executor = worker.call_args.kwargs["test_executor"]
+        self.assertTrue(callable(executor))
+        self.assertFalse(worker.call_args.kwargs["cancel_event"])
+        self.assertFalse(result["merge_allowed"])
+
+    def test_historical_cli_sandbox_path_does_not_require_host_test_opt_in(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "private-report.json"
+            argv = ["first_task.py", "--repo", temp,
+                    "--model", "synthetic:1b", "--output", str(output),
+                    "--sandbox-image", IMAGE]
+            evidence = {"status": "ready_for_human_review", "merge_allowed": False,
+                        "test_exit_code": 0}
+            with patch.object(sys, "argv", argv), \
+                 patch.object(first_task, "run_task",
+                              return_value=evidence) as worker, \
+                 redirect_stdout(io.StringIO()):
+                with self.assertRaises(SystemExit) as result:
+                    first_task.main()
+            self.assertEqual(result.exception.code, 0)
+            self.assertTrue(callable(worker.call_args.kwargs["test_executor"]))
+            self.assertEqual(json.loads(output.read_text()), evidence)
+
     def test_gateway_cli_cannot_use_host_and_sandbox_modes_together(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "blocked.json"
