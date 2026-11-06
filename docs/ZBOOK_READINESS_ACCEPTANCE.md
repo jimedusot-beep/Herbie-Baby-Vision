@@ -99,3 +99,19 @@ exact reviewed Git blob fingerprint; private gateway implementation must
 never be published to this public repository. Keep primary #5/#93, existing
 STOP review #31/#140, and new Step 2 review PRs separate and draft until
 tests and human review pass.
+
+### Stable ID for direct Worker Bee command-line runs
+
+The opt-in `agents/gateway_first_task.py` command-line interface now requires
+`--request-id <canonical-UUID>` in addition to the pre-existing
+`--allow-trusted-host-tests`. The operator must **record and reuse the exact
+same UUID** when checking the outcome of an uncertain attempt. Missing or
+malformed IDs block before the gateway is contacted. Neither this CLI nor the
+client automatically retries. Never generate a fresh UUID merely to retry an
+outcome that might already have run: the server can reject the *same* UUID,
+not independently identify equivalent work under different UUIDs.
+
+This is a new, intentional stricter CLI contract. The separately generated
+trusted-fixture smoke calls the reviewed Python API, not the CLI, and remains
+functional without a long-lived operator request ID. Manual re-execution
+should not be called resume: no durable job result retrieval is provided.
