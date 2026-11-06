@@ -18,7 +18,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'agents'))
-from herbie_gateway_client import GatewayError, HerbieGatewayClient
+from herbie_gateway_client import GatewayCancelled, GatewayError, HerbieGatewayClient
 from live_ollama_smoke import SmokeBlocked, load_gateway_module
 
 MODEL = 'qwen2.5-coder:1.5b'  # Synthetic model name, no model download.
@@ -44,6 +44,9 @@ class EndToEndContractTests(unittest.TestCase):
         self.secret = secrets.token_urlsafe(40)
         self.inference_requests = []
         self.force_ollama_error = False
+        self.pause_ollama = False
+        self.ollama_entered = threading.Event()
+        self.ollama_release = threading.Event()
         case = self
 
         class FakeOllama(BaseHTTPRequestHandler):
@@ -55,6 +58,9 @@ class EndToEndContractTests(unittest.TestCase):
                 size = int(self.headers['Content-Length'])
                 request = json.loads(self.rfile.read(size))
                 case.inference_requests.append(request)
+                if case.pause_ollama:
+                    case.ollama_entered.set()
+                    case.ollama_release.wait(4)
                 if case.force_ollama_error:
                     self.send_response(503)
                     self.send_header('Content-Length', '0')
@@ -81,6 +87,7 @@ class EndToEndContractTests(unittest.TestCase):
         self.client = HerbieGatewayClient(url, self.secret, MODEL, timeout=3)
 
     def tearDown(self):
+        self.ollama_release.set()
         for server in (self.gateway, self.ollama):
             server.shutdown()
             server.server_close()
@@ -147,6 +154,44 @@ class EndToEndContractTests(unittest.TestCase):
         with self.assertRaises(GatewayError):
             self.client.infer('coding', 'Synthetic failure', str(uuid4()))
         self.assertEqual(len(self.inference_requests), 1)
+
+    def test_cancel_with_real_client_and_fake_ollama_suppresses_stale_reply(self):
+        # Requires the reviewed private logical-stop gateway candidate.
+        # This exercises actual HTTP auth and Ollama adapter using a fake server.
+        self.pause_ollama = True
+        request_id = str(uuid4())
+        local_stop = threading.Event()
+        delivered, rejected = [], []
+
+        def request_worker():
+            try:
+                delivered.append(self.client.infer(
+                    'testing', 'Synthetic slow task', request_id,
+                    cancel_event=local_stop))
+            except GatewayError as exc:
+                rejected.append(type(exc).__name__)
+
+        worker = threading.Thread(target=request_worker)
+        worker.start()
+        try:
+            self.assertTrue(self.ollama_entered.wait(2))
+            wrong = HerbieGatewayClient(
+                self.client.base_url, 'z' * 48, MODEL, timeout=3)
+            with self.assertRaises(GatewayError):
+                wrong.cancel(request_id)
+            self.assertEqual(self.client.cancel(request_id),
+                             'cancellation_recorded')
+            local_stop.set()
+        finally:
+            self.ollama_release.set()
+            worker.join(timeout=5)
+
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(delivered, [])
+        self.assertEqual(rejected, ['GatewayCancelled'])
+        self.assertEqual(len(self.inference_requests), 1)
+        with self.assertRaises(GatewayError):
+            self.client.infer('testing', 'Attempt repeated task', request_id)
 
     def test_retry_is_not_automatic_for_an_unavailable_server(self):
         self.force_ollama_error = True
