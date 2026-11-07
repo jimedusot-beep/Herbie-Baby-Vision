@@ -23,6 +23,8 @@ class WindowsSmokeLauncherTests(unittest.TestCase):
         self.assertIn(f'if /I not "%FIRST_TASK_SHA%"=="{git_blob("agents/first_task.py")}"', cmd)
         self.assertIn(f'if /I not "%GATEWAY_TASK_SHA%"=="{git_blob("agents/gateway_first_task.py")}"', cmd)
         self.assertIn(f'if /I not "%CONTAINER_RUNNER_SHA%"=="{git_blob("agents/container_test_runner.py")}"', cmd)
+        self.assertIn(f'if /I not "%ISOLATED_RUNNER_SHA%"=="{git_blob("agents/isolated_repo_runner.py")}"', cmd)
+        self.assertIn(f'if /I not "%ISOLATED_ENTRY_SHA%"=="{git_blob("agents/isolated_worker_entry.py")}"', cmd)
 
     def test_herbie_gateway_pin_matches_live_loader_and_launcher(self):
         smoke = (ROOT / 'integration' / 'live_ollama_smoke.py').read_text()

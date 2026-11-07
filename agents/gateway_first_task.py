@@ -1,7 +1,8 @@
 """Opt-in Worker Bee #1: the EXISTING bounded coding task via H.E.R.B.I.E. gateway.
 
 No new tools, autonomous commands, deployment, memory, or hardware access.
-Runs trusted repository tests through first_task.run_task, NOT inside an OS sandbox.
+The optional full-container mode moves all repository Git, patch and test
+subprocesses into the approved offline container; legacy host mode is trusted-only.
 """
 import argparse
 import json
@@ -10,7 +11,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
-from first_task import run_task, validate_proposal, SCRIPT, UNIT_SCRIPT
+from first_task import run_task, run_wholly_isolated_task, validate_proposal, SCRIPT, UNIT_SCRIPT
 from container_test_runner import run_container_npm_test
 from herbie_gateway_client import HerbieGatewayClient, validate_gateway_url
 
@@ -73,11 +74,18 @@ def run_gateway_task(repo, model, gateway_url, token, *, base='HEAD',
     def proposer(current_model, current_url, timeout):
         return propose_via_gateway(current_model, current_url, timeout, token,
                                    request_id=request_id, cancel_event=cancel_event)
-    executor = (lambda checkout: run_container_npm_test(
-        checkout, image=sandbox_image)) if sandbox_image else None
-    evidence = run_task(repo, model, base_url=url, base=base, timeout=60,
-                        proposer=proposer, cancel_event=cancel_event,
-                        test_executor=executor)
+    if sandbox_image:
+        # No host Git, checkout, patch or npm in this path. The gateway only
+        # provides the fixed proposal; the entire repository task is contained.
+        evidence = run_wholly_isolated_task(
+            repo, model, base_url=url, base=base, timeout=60,
+            proposer=proposer, cancel_event=cancel_event,
+            sandbox_image=sandbox_image)
+    else:
+        # Owner-trusted legacy fixture mode only.
+        evidence = run_task(repo, model, base_url=url, base=base,
+                            timeout=60, proposer=proposer,
+                            cancel_event=cancel_event)
     evidence['proposal_transport'] = 'authenticated_herbie_gateway'
     evidence['remote_devices_tested'] = False
     evidence['merge_allowed'] = False

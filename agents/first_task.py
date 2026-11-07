@@ -16,6 +16,7 @@ import urllib.request
 from urllib.parse import urlsplit
 
 from container_test_runner import run_container_npm_test
+from isolated_repo_runner import run_isolated_repo_task
 
 
 class TaskCancelled(RuntimeError):
@@ -175,6 +176,34 @@ def run_task(repo, model, base_url='http://127.0.0.1:11434', base='HEAD', timeou
             git(repo, 'worktree', 'remove', '--force', str(checkout))
 
 
+def run_wholly_isolated_task(repo, model, base_url='http://127.0.0.1:11434',
+                              base='HEAD', timeout=90, proposer=None,
+                              cancel_event=None, sandbox_image=None):
+    """For unfamiliar source: NO Git, npm or checkout on the host.
+
+    The local model proposal is fixed, unrelated to source repository contents.
+    All source Git/patch/test subprocesses run only inside the selected
+    pre-existing local container. Legacy run_task remains trusted-fixture-only.
+    """
+    require_active(cancel_event)
+    proposal = validate_proposal((proposer or propose)(model, base_url, timeout))
+    require_active(cancel_event)
+    evidence = run_isolated_repo_task(
+        repo, image=sandbox_image, base=base, proposal=proposal,
+        cancel_event=cancel_event)
+    require_active(cancel_event)
+    if evidence.get('proposal') != proposal:
+        raise ValueError('Isolated result does not match approved proposal')
+    evidence.update({'model': model,
+                     'task': 'add-npm-test-entry-point',
+                     'model_generated': True,
+                     'allowed_files': ['package.json'],
+                     'hosted_ci_verified': False,
+                     'created_at': datetime.now(timezone.utc).isoformat(),
+                     'merge_allowed': False})
+    return evidence
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo', required=True, type=Path)
@@ -190,15 +219,17 @@ def main():
     args = parser.parse_args()
     if bool(args.allow_trusted_host_tests) == bool(args.sandbox_image):
         parser.error('Choose exactly one execution mode: trusted host tests OR a pinned sandbox image')
-    # Even in container mode, Git checkout and cleanup happen on the host.
-    # Never supply a foreign or unreviewed Git repository to this coordinator.
+    # Only --sandbox-image enters full checkout/edit/test isolation.
+    # The trusted host mode remains for personally reviewed fixture repositories.
     if args.output.exists():
         parser.error('Choose a new evidence path; existing files are never overwritten')
     try:
-        executor = (lambda checkout: run_container_npm_test(
-            checkout, image=args.sandbox_image)) if args.sandbox_image else None
-        evidence = run_task(args.repo, args.model, args.ollama_url, args.base,
-                            test_executor=executor)
+        if args.sandbox_image:
+            evidence = run_wholly_isolated_task(
+                args.repo, args.model, args.ollama_url, args.base,
+                sandbox_image=args.sandbox_image)
+        else:
+            evidence = run_task(args.repo, args.model, args.ollama_url, args.base)
     except Exception as error:
         evidence = {'status': 'blocked', 'merge_allowed': False,
                     'model': args.model, 'test_exit_code': None,
