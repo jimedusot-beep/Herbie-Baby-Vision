@@ -161,18 +161,19 @@ class ContainerCliTests(unittest.TestCase):
             self.assertEqual(task.call_args.kwargs["sandbox_image"], IMAGE)
             self.assertEqual(json.loads(output.read_text()), evidence)
 
-    def test_gateway_worker_passes_container_executor_into_both_test_stages(self):
+    def test_gateway_worker_routes_sandbox_to_full_isolation_not_host_worktree(self):
         evidence = {"status": "ready_for_human_review",
                     "merge_allowed": False, "test_exit_code": 0}
-        with patch.object(gateway_first_task, "run_task",
-                          return_value=evidence) as worker:
+        with patch.object(gateway_first_task, "run_task") as legacy, \
+             patch.object(gateway_first_task, "run_wholly_isolated_task",
+                          return_value=evidence) as isolated:
             result = gateway_first_task.run_gateway_task(
-                "unused-trusted-fixture", "synthetic:1b",
+                "unused-unfamiliar-repo", "synthetic:1b",
                 "http://127.0.0.1:8787", TOKEN, sandbox_image=IMAGE)
         self.assertEqual(result["status"], "ready_for_human_review")
-        executor = worker.call_args.kwargs["test_executor"]
-        self.assertTrue(callable(executor))
-        self.assertFalse(worker.call_args.kwargs["cancel_event"])
+        isolated.assert_called_once()
+        legacy.assert_not_called()
+        self.assertEqual(isolated.call_args.kwargs["sandbox_image"], IMAGE)
         self.assertFalse(result["merge_allowed"])
 
     def test_historical_cli_sandbox_path_does_not_require_host_test_opt_in(self):
@@ -184,13 +185,16 @@ class ContainerCliTests(unittest.TestCase):
             evidence = {"status": "ready_for_human_review", "merge_allowed": False,
                         "test_exit_code": 0}
             with patch.object(sys, "argv", argv), \
-                 patch.object(first_task, "run_task",
-                              return_value=evidence) as worker, \
+                 patch.object(first_task, "run_task") as legacy, \
+                 patch.object(first_task, "run_wholly_isolated_task",
+                              return_value=evidence) as isolated, \
                  redirect_stdout(io.StringIO()):
                 with self.assertRaises(SystemExit) as result:
                     first_task.main()
             self.assertEqual(result.exception.code, 0)
-            self.assertTrue(callable(worker.call_args.kwargs["test_executor"]))
+            legacy.assert_not_called()
+            isolated.assert_called_once()
+            self.assertEqual(isolated.call_args.kwargs["sandbox_image"], IMAGE)
             self.assertEqual(json.loads(output.read_text()), evidence)
 
     def test_gateway_cli_cannot_use_host_and_sandbox_modes_together(self):
