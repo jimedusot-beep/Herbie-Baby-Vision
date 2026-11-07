@@ -77,10 +77,12 @@ def _eligible(package):
         raise ValueError("Repository is not eligible")
 
 
-def execute(body):
+def execute(body, *, _test_workspace=None):
     base, proposal = _proposal(body)
-    # This is a container-only temporary path. No host-writable volume exists.
-    checkout = Path("/work/checkout")
+    # Production uses /work, a container-only bounded tmpfs. The optional
+    # test workspace is a unit-test dependency only; it is NOT read from input.
+    checkout = (Path("/work") if _test_workspace is None
+                else Path(_test_workspace)) / "checkout"
     env = dict(os.environ)
     env.update({"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null",
                 "GIT_TEMPLATE_DIR": "/dev/null", "GIT_ALLOW_PROTOCOL": "file",
